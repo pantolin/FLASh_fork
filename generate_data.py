@@ -96,13 +96,13 @@ if __name__ == "__main__":
 
     comm.Barrier()
 
-    n_snapshots = 2500
+    n_snapshots = 10
     n = [1, 1]
     degree = 8
     dim = 2
 
-    xmin = np.array([0,0])
-    xmax = np.array([1,1])
+    xmin = np.array([0.0, 0.0])
+    xmax = np.array([1.0, 1.0])
 
     epsilon_min = 0.1
     epsilon_max = 0.9
@@ -135,8 +135,15 @@ if __name__ == "__main__":
             assemble=True
         )
 
-        snapshots_K.append(my_subdomain.K.toarray())
-        snapshots_L.append(scipy.linalg.cholesky(my_subdomain.K.toarray()))
+        K = my_subdomain.K.toarray()
+        i_dofs = my_subdomain.get_interior_dofs()
+
+        snapshots_K.append(K)
+
+        K = K[i_dofs][:, i_dofs]
+        L = sp.linalg.cholesky(K)
+        
+        snapshots_L.append(L)
         snapshots_M.append(my_subdomain.M.toarray())
         snapshots_bM.append(my_subdomain.bM.toarray())
 
