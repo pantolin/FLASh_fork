@@ -8,6 +8,8 @@ from functools import lru_cache
 
 import scipy.sparse.linalg
 from splines import BSpline2D, BSpline3D
+from legendre import Legendre2D
+from gauss_lobatto import Lagrange2D
 
 from mpi4py import MPI
 from pathlib import Path
@@ -105,7 +107,8 @@ class Subdomain:
 
         self._levelset = levelset
         self._linear_pde = linear_pde
-        self._spline_basis = BSpline2D(n, degree, p0, p1)
+        # self._spline_basis = BSpline2D(n, degree, p0, p1)
+        self._spline_basis = Lagrange2D(degree, p0, p1)
 
         self._total_size = self._spline_basis.get_total_number_basis() * dim
 
@@ -385,7 +388,7 @@ class Subdomain:
         M = self._linear_pde.assemble_boundary_mass(unf_mesh, V)
 
         self._x = V.tabulate_dof_coordinates()
-        self.C = self.create_lagrange_extraction(self._x)
+        self.C = self.create_lagrange_extraction(self._x) # cipy.sparse.identity(M.shape[0]) #
 
         self._boundary_M = M
         self._boundary_cM = self.C @ M
@@ -499,9 +502,9 @@ class Subdomain:
 
         V = dolfinx.fem.functionspace(unf_mesh, ("Lagrange", degree, (dim,)))
         uh = dolfinx.fem.Function(V)
-        uh.x.array[:] = self.get_u_lagrange(u)
+        uh.x.array[:] = self.get_lagrange_function(u)
 
-        reparam_degree = 3
+        reparam_degree = 10
         reparam = qugar.reparam.create_reparam_mesh(unf_mesh, degree=reparam_degree, levelset=False)
         reparam_mesh = reparam.create_mesh()
 
@@ -525,14 +528,22 @@ class Subdomain:
             zeros = np.zeros((uh_data.shape[0], 1), dtype=uh_data.dtype)
             uh_data = np.hstack((uh_data, zeros))
 
-        pv_mesh.point_data["uh"] = uh_data
+            pv_mesh.point_data["uh"] = uh_data
 
-        # pl.add_mesh(pv_mesh, scalars="uh", show_edges=False)
-        warped = pv_mesh.warp_by_vector("uh", factor=1.0)  
-        pl.add_mesh(warped, scalars="uh", show_edges=False)
+            # pl.add_mesh(pv_mesh, scalars="uh", show_edges=False)
+            warped = pv_mesh.warp_by_vector("uh", factor=1.0)  
+            pl.add_mesh(warped, scalars="uh", show_edges=False)
 
-        pl.show_axes()
-        pl.show()
+            pl.show_axes()
+            pl.show()
+
+        if dim == 1:
+
+            pv_mesh.point_data["uh"] = uh_data
+            pl.add_mesh(pv_mesh, scalars="uh", show_edges=False)
+
+            pl.show_axes()
+            pl.show()
 
         if dim == 2:
 

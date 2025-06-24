@@ -270,3 +270,228 @@ class Elasticity:
             f += b.array
 
         return f
+    
+
+class Poisson:
+
+    def __init__(
+        self,
+        kappa: float = 1.0,
+        dim: int = 1,
+        interior_bc: list[tuple] = [],
+        exterior_bc: list[tuple] = [],
+        source: Callable = zero_function,
+        u: list[Expr] | None = None
+    ) -> None:
+        
+        self.kappa = kappa
+        self.dim = dim
+
+        self.interior_bc = interior_bc
+        self.exterior_bc = exterior_bc
+        self.source = source
+        self.u = u
+
+        if u:
+
+            self.u_callable, self.f_callable, self.grad_callable = self._create_manufactured_solution()
+
+    def _create_manufactured_solution(self) -> tuple[Callable[[np.ndarray], np.ndarray]]:
+
+        x, y = sy.symbols('x y')
+        
+        u = self.u
+        a = sy.symbols('a')
+        a_val = self.kappa
+        
+        grad_u = a * sy.Matrix([sy.diff(u, x), sy.diff(u, y)])
+        grad_u = grad_u.subs(a, a_val)
+
+        laplacian_u = sy.diff(u, x, 2) + sy.diff(u, y, 2)
+        f = -a * laplacian_u
+        f = f.subs(a, a_val)
+
+        u_num = sy.lambdify((x, y), u, "numpy")
+        f_num = sy.lambdify((x, y), f, "numpy")
+        grad_num = [sy.lambdify((x, y), comp, "numpy") for comp in grad_u]
+
+        u_callable = make_callable([u_num])
+        f_callable = make_callable([f_num])
+        grad_callable = make_callable(grad_num)
+            
+        return u_callable, f_callable, grad_callable
+
+    def create_function_space(self, unf_mesh: UnfittedCartMesh, degree: int) -> tuple[FunctionSpace, FunctionSpace]:
+
+        V = dolfinx.fem.functionspace(unf_mesh, ("Lagrange", degree))
+        V2 = dolfinx.fem.functionspace(unf_mesh, ("Lagrange", degree, (2,)))
+
+        return V, V2
+    
+    def assemble_boundary_mass(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace) -> SparseMatrix:
+
+        facet_tags = unf_mesh.create_facet_tags(cut_tag=0, full_tag=0, ext_integral=True)
+        ds = ufl.ds(subdomain_id=0, domain=unf_mesh, subdomain_data=facet_tags)
+
+        u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
+        m = u * v * ds
+
+        m_form = cast(CustomForm, form_custom(m, unf_mesh, dtype=dtype))
+        M = dolfinx.fem.petsc.assemble_matrix(m_form, coeffs=m_form.pack_coefficients())
+        M.assemble()
+
+        ia, ja, a = M.getValuesCSR()
+        M = sp.sparse.csr_matrix((a, ja, ia), shape=M.getSize())
+
+        return M
+
+    def assemble_stiffness(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace) -> SparseMatrix:
+
+        u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
+
+        kappa = self.kappa
+
+        a = kappa * ufl.inner(ufl.grad(u), ufl.grad(v)) * ufl.dx
+        a_form = cast(CustomForm, form_custom(a, unf_mesh, dtype=dtype))
+        A = dolfinx.fem.petsc.assemble_matrix(a_form, coeffs=a_form.pack_coefficients())
+        A.assemble()
+
+        ia, ja, a = A.getValuesCSR()
+        K = sp.sparse.csr_matrix((a, ja, ia), shape=A.getSize())
+
+        return K
+    
+    def assemble_mass(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace) -> SparseMatrix:
+
+        u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
+
+        a = u * v * ufl.dx
+        a_form = cast(CustomForm, form_custom(a, unf_mesh, dtype=dtype))
+        A = dolfinx.fem.petsc.assemble_matrix(a_form, coeffs=a_form.pack_coefficients())
+        A.assemble()
+
+        ia, ja, a = A.getValuesCSR()
+        M = sp.sparse.csr_matrix((a, ja, ia), shape=A.getSize())
+
+        return M
+
+    def assemble_right_hand_side(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace, V2: FunctionSpace) -> np.ndarray: 
+
+        if not self.u:
+            return self._assemble_rhs_general(unf_mesh, V)
+                
+        else: 
+            return self._assemble_rhs_manufatured_solution(unf_mesh, V, V2)
+
+    def _assemble_rhs_manufatured_solution(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace, V2: FunctionSpace) -> np.ndarray:
+
+        v = ufl.TestFunction(V)
+
+        fh = dolfinx.fem.Function(V)
+        fh.interpolate(self.f_callable)
+        
+        cell_tags = unf_mesh.create_cell_meshtags(cut_tag=0, full_tag=1)
+
+        dx = ufl.dx(
+            subdomain_id=(0, 1),
+            domain=unf_mesh,
+            subdomain_data=cell_tags,
+        )
+
+        sh = dolfinx.fem.Function(V2)
+        sh.name = "sh"
+        sh.interpolate(self.grad_callable)
+
+        bound_normal = mapped_normal(unf_mesh)
+
+        ds_unf = ds_bdry_unf(subdomain_id=0, domain=unf_mesh, subdomain_data=cell_tags)
+        
+        # There is a bug when both integrals are computed toghether.
+
+        L = fh * v * dx 
+        L_form = cast(CustomForm, form_custom(L, unf_mesh, dtype=dtype))
+        b = dolfinx.fem.petsc.assemble_vector(L_form, coeffs=L_form.pack_coefficients())
+        f = b.array
+
+        L = self.kappa * ufl.dot(sh, bound_normal) * v * ds_unf
+        L_form = cast(CustomForm, form_custom(L, unf_mesh, dtype=dtype))
+        b = dolfinx.fem.petsc.assemble_vector(L_form, coeffs=L_form.pack_coefficients())
+        f += b.array
+
+        return f
+    
+    def _assemble_rhs_general(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace) -> np.ndarray:
+
+        v = ufl.TestFunction(V)
+
+        cut_facets = unf_mesh.get_cut_facets(ext_integral=True)
+        full_facets = unf_mesh.get_full_facets(ext_integral=True)
+        exterior_facets = full_facets.concatenate(cut_facets)
+
+        top = unf_mesh.topology
+
+        top.create_connectivity(2, 1)
+        top.create_connectivity(1, 2)
+
+        c_2_e = top.connectivity(2, 1)
+        e_2_c = top.connectivity(1, 2)
+        
+        fh = dolfinx.fem.Function(V)
+        fh.interpolate(self.source)
+        
+        L = fh * v * ufl.dx 
+        L_form = cast(CustomForm, form_custom(L, unf_mesh, dtype=dtype))
+        b = dolfinx.fem.petsc.assemble_vector(L_form, coeffs=L_form.pack_coefficients())
+        f = b.array
+        
+        facet_data = []
+        funs = []
+
+        for (type_, fun, marker, ind) in self.exterior_bc:
+
+            if type_ == 1:
+
+                facets = locate_entities(unf_mesh, 1, marker)
+                if facets.size > 0:
+
+                    cell_ids = np.array([e_2_c.links(facet)[0] for facet in facets])
+                    local_facet_ids = np.array([np.where(c_2_e.links(c) == e)[0][0] for e, c in zip(facets, cell_ids)])
+
+                    all_facets = qugar.mesh.mesh_facets.MeshFacets(cell_ids, local_facet_ids)
+                    bc_facets = all_facets.intersect(exterior_facets)
+                    facet_data.append(bc_facets.as_array())
+                    funs.append(dolfinx.fem.Function(V))
+                    funs[-1].interpolate(fun)
+
+        if facet_data:
+
+            facet_tags = list(enumerate(facet_data))
+
+            for ind, fun in enumerate(funs):
+
+                if ind == 0:
+                    L = self.kappa * fun * v * ufl.ds(subdomain_id=ind, domain=unf_mesh, subdomain_data=facet_tags)
+                else:
+                    L += self.kappa * fun * v * ufl.ds(subdomain_id=ind, domain=unf_mesh, subdomain_data=facet_tags)
+
+            L_form = cast(CustomForm, form_custom(L, unf_mesh, dtype=dtype))
+            b = dolfinx.fem.petsc.assemble_vector(L_form, coeffs=L_form.pack_coefficients())
+            f += b.array
+
+        for (type_, fun, marker, ind) in self.interior_bc:
+
+            assert type_ == 1
+
+            cell_tags = unf_mesh.create_cell_meshtags(cut_tag=0, full_tag=1)
+            ds_unf = ds_bdry_unf(subdomain_id=0, domain=unf_mesh, subdomain_data=cell_tags)
+
+            fh = dolfinx.fem.Function(V)
+            fh.interpolate(fun)
+            L = self.kappa * fun * v * ds_unf
+
+            L_form = cast(CustomForm, form_custom(L, unf_mesh, dtype=dtype))
+            b = dolfinx.fem.petsc.assemble_vector(L_form, coeffs=L_form.pack_coefficients())
+            f += b.array
+
+        return f
+    
