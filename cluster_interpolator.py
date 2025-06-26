@@ -11,7 +11,7 @@ from sklearn.cluster import KMeans
 from sklearn.cluster import KMeans
 
 from deim_int import compute_rSVD_basis, compute_magic_points, compute_deim_coefficients
-from deim_int import DataTrimmer, create_RBF_interpolator, interpolate_coefficients
+from deim_int import DataTrimmer, create_RBF_interpolator, interpolate_coefficients, compute_aproximations
 from plotter import Plotter
 from subdomain import Subdomain
 from linear_pde import Elasticity
@@ -134,20 +134,76 @@ class Plots(Plotter):
 
         plt.savefig(cls.add_folder(path), bbox_inches="tight")
 
-def rbf_interpolator_error(coefficients, test_coefficients, parameters, test_parameters):
+    @classmethod
+    def plot_2(
+        cls,
+        size,
+        data,
+        path: str,
+        dir: str,
+        title: str,
+        xlabel: str = "$x$",
+        ylabel: str = "$y$",
+        legend_loc = (0.5, -0.15),
+        fa = [0.05, 0.95, 0.9, 0.05, 0.25, 0.5],
+        nc = 3
+    ) -> None:
+
+        cls._folder = os.path.join(os.path.join(os.getcwd(), "figs"), dir)
+        cls.__clear__()
+        cls.__setup_config__()
+
+        fig, ax = plt.subplots(figsize=size)
+
+        fig.suptitle(title, fontsize=16)
+
+        xs = data["x"]
+        ys = data["y"]
+        labels = data["label"]
+
+        for x, y, label in zip(xs, ys, labels):
+            ax.loglog(x, y, "-", markersize=4, label=label)
+
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+
+        ax.grid()
+
+        ax.legend(
+            loc="upper center",
+            bbox_to_anchor=legend_loc,
+            ncol=nc,
+            fontsize=12,
+            edgecolor="black",  # Legend border color
+            fancybox=False      # Rounded box edges
+        )
+
+        plt.savefig(cls.add_folder(path), bbox_inches="tight")
+
+def rbf_interpolator_error(coefficients, test_coefficients, parameters, test_parameters, basis, test_snapshots):
 
     interpolator = create_RBF_interpolator(parameters, coefficients.T)
     coefs_i = interpolate_coefficients(interpolator, parameters)
 
     test_coefs_i = interpolate_coefficients(interpolator, test_parameters)
 
-    error = np.linalg.norm(coefficients.T-coefs_i, np.inf)
-    error = np.average(error/np.linalg.norm(coefficients.T, np.inf))
+    error = np.linalg.norm(coefficients.T-coefs_i, np.inf, axis = 0)
+    error = np.average(error/np.linalg.norm(coefficients.T, np.inf, axis = 0))
 
-    test_error = np.linalg.norm(test_coefficients.T-test_coefs_i, np.inf)
-    test_error = np.average(test_error/np.linalg.norm(test_coefficients.T, np.inf))
+    test_error = np.linalg.norm(test_coefficients.T-test_coefs_i, np.inf, axis = 0)
+    test_error = np.average(test_error/np.linalg.norm(test_coefficients.T, np.inf, axis = 0))
 
-    return error, test_error
+    snapshots_c = compute_aproximations(basis, test_coefficients.T)
+    snapshots_i = compute_aproximations(basis, test_coefs_i)
+
+    snapshots_error = np.linalg.norm(test_snapshots-snapshots_c, np.inf, axis = 0)
+    snapshots_error = np.average(snapshots_error/np.linalg.norm(test_snapshots, np.inf, axis = 0))
+
+    snapshots_rbf_error = np.linalg.norm(test_snapshots-snapshots_i, np.inf, axis = 0)
+    snapshots_rbf_error = np.average(snapshots_rbf_error/np.linalg.norm(test_snapshots, np.inf, axis = 0))
+
+    return error, test_error, snapshots_error, snapshots_rbf_error
+
 
 def bcast_array(array, comm):
     shape = comm.bcast(array.shape if rank == 0 else None, root=0)
@@ -203,7 +259,7 @@ if __name__ == "__main__":
 
     total_points = 40
     batch_size = 10
-    number_of_clusters = 2
+    number_of_clusters = 1
 
     if rank == 0:
         sampler = sp.stats.qmc.LatinHypercube(d=4)
@@ -238,7 +294,7 @@ if __name__ == "__main__":
 
             members = np.where(labels == cluster)[0].astype(int)
 
-            cluster_snapshots = snapshots[members]
+            cluster_snapshots = snapshots.T[members].T
             cluster_parameters = parameters[members]
 
             U[cluster], _, _ = compute_rSVD_basis(cluster_snapshots, k = 8, set_n = True, n = 4)
@@ -252,7 +308,7 @@ if __name__ == "__main__":
         I[cluster] = bcast_array(I[cluster], comm)
         I[cluster] = I[cluster].astype(int)
 
-    ### TEST COEFFICIENTS ###
+    ### TEST SAMPLES ###
 
     if rank == 0:
 
@@ -262,6 +318,7 @@ if __name__ == "__main__":
 
         cluster_test_coefficients = [[] for _ in range(number_of_clusters)]
         cluster_test_parameters = [[] for _ in range(number_of_clusters)]
+        cluster_test_snapshots = [[] for _ in range(number_of_clusters)]
 
         for batch_i in range(0, len(test_parameters), batch_size):
 
@@ -281,9 +338,11 @@ if __name__ == "__main__":
 
                 cluster_test_parameters[cluster].append(batch_params[members])
                 cluster_test_coefficients[cluster].append(compute_deim_coefficients(U[cluster], I[cluster], cluster_S.T).T)
+                cluster_test_snapshots[cluster].append(cluster_S)
 
         cluster_test_parameters = [np.vstack(p) if p else [] for p in cluster_test_parameters]
         cluster_test_coefficients = [np.vstack(c) if c else [] for c in cluster_test_coefficients]
+        cluster_test_snapshots = [np.vstack(s) if s else [] for s in cluster_test_snapshots]
 
     ### RBF INTERPOLATOR ###
 
@@ -291,6 +350,9 @@ if __name__ == "__main__":
 
     rbf_errors = []
     rbf_test_errors = []
+
+    rbf_snapshots_errors = []
+    snapshots_errors = []
 
     for total_points in rbf_n:
 
@@ -340,6 +402,9 @@ if __name__ == "__main__":
             cluster_error = []
             cluster_test_error = []
 
+            cluster_snapshot_error = []
+            cluster_rbf_snapshot_error = []
+
             for i in range(number_of_clusters):
 
                 parameters = [p[i] for p in all_parameters]
@@ -348,26 +413,37 @@ if __name__ == "__main__":
                 cluster_parameters.append(np.vstack(parameters))
                 cluster_coefficients.append(np.vstack(coefficients))
 
-                error, test_error = rbf_interpolator_error(
+                error, test_error, s_error, rbf_s_errors= rbf_interpolator_error(
                     cluster_coefficients[i], 
                     cluster_test_coefficients[i], 
                     cluster_parameters[i], 
-                    cluster_test_parameters[i]
+                    cluster_test_parameters[i],
+                    U[i],
+                    cluster_test_snapshots[i]
                 )
 
                 cluster_error.append(error)
                 cluster_test_error.append(test_error)
+
+                cluster_snapshot_error.append(s_error)
+                cluster_rbf_snapshot_error.append(rbf_s_errors)
 
             print("Cocolo colocao: ", total_points, "\n")
 
             rbf_errors.append(cluster_error)
             rbf_test_errors.append(cluster_test_error)
 
+            snapshots_errors.append(cluster_snapshot_error)
+            rbf_snapshots_errors.append(cluster_rbf_snapshot_error)
+
     
     if rank == 0:
 
-        print("De aqui y palla: ", rbf_errors, "\n")
-        print("como una hamaca: ", rbf_test_errors, "\n")
+        print(rbf_errors)
+        print(rbf_test_errors)
+
+        print(snapshots_errors)
+        print(rbf_snapshots_errors)
 
         errors = [sum(e) / len(e) for e in rbf_test_errors]
         labels = f"$N_c = {number_of_clusters}$"
@@ -384,6 +460,28 @@ if __name__ == "__main__":
             "and_what_do_i_do.pdf",
             "K",
             f"Interpolating coefficient errors for $K$ ($4$ parameters)",
+            f"$N_s$",
+            f"$\\frac{{\|\\theta-\hat{{\\theta}}\|}}{{\|\\theta\|}}$"
+        )
+
+        x = [rbf_n, rbf_n]
+        y = [
+            [sum(e) / len(e) for e in snapshots_errors],
+            [sum(e) / len(e) for e in rbf_snapshots_errors]
+        ]
+
+        data = {
+            "x": x,
+            "y": y,
+            "label": ["Computing", "Interpolating"]
+        }
+
+        Plots.plot_2(
+            (5, 4),
+            data,
+            "so_be_it.pdf",
+            "K",
+            f"IErrors for $K$ ($4$ parameters)",
             f"$N_s$",
             f"$\\frac{{\|\\theta-\hat{{\\theta}}\|}}{{\|\\theta\|}}$"
         )
