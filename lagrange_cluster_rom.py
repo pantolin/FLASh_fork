@@ -11,7 +11,7 @@ from sklearn.cluster import KMeans
 
 from deim_int import compute_rSVD_basis, compute_magic_points, compute_deim_coefficients
 from deim_int import DataTrimmer, create_RBF_interpolator, interpolate_coefficients, compute_aproximations
-from interpolator import LagrangeInterpolator
+from interpolator_2 import Interpolator
 from plotter import Plotter
 from subdomain import Subdomain
 from linear_pde import Elasticity
@@ -329,7 +329,7 @@ if __name__ == "__main__":
 
         for p in p_list:
 
-            interpolator = LagrangeInterpolator(4, 0, [1] * 4, [p] * 4, epsilon_0, epsilon_1)
+            interpolator = Interpolator(4, p, epsilon_0, epsilon_1)
 
             parameters = interpolator.get_nodes()
             total_points = parameters.shape[0]
