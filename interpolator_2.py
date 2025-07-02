@@ -2,10 +2,14 @@ import numpy as np
 import scipy as sc
 import matplotlib.pyplot as plt
 
+import os
+import h5py
+
 import math
 from numpy.polynomial.legendre import leggauss
 from scipy.interpolate import BarycentricInterpolator
 from collections import defaultdict
+from itertools import product
 
 def get_nodes(p, a = -1, b = 1):
 
@@ -95,3 +99,86 @@ class Interpolator:
     def evaluate(self, x):
 
         return self.evaluate_basis(x) @ self._weights
+    
+class MDEIM:
+
+    def __init__(self, n: int, p: int, p0: np.ndarray, p1: np.ndarray) -> None:
+
+        self._n = n
+        self._p = p
+        self._d = p0.size
+        
+        self._p0 = p0
+        self._p1 = p1
+
+        self._create_nodes()
+
+    def _create_nodes(self) -> None:
+
+        self._nodes = []
+
+        for x0, x1 in zip(self._p0, self._p1):
+            self._nodes.append(np.linspace(x0, x1, self._n+1))
+
+    def set_up(self, basis, weights) -> None:
+
+        self._basis = basis
+        self._interpolators = []
+
+        for idx in product(range(self._n), repeat=self._d):
+
+            idx = list(idx[::-1])
+
+            id = 0
+            count = 1
+            for i in idx:
+                id += i*count
+                count *= self._n
+
+            p0 = self._p0[idx]
+            p1 = self._p1[idx]
+
+            interpolator = Interpolator(self._d, self._p, p0, p1)
+            interpolator._weights = weights[id]
+
+            self._interpolators.append(interpolator)
+
+    def locate_point(self, x):
+
+        x = np.atleast_2d(x)
+
+        indices = []
+
+        for i, grid in enumerate(self._nodes):
+            idx = np.searchsorted(grid, x[:,i], side='right') - 1
+            idx = np.clip(idx, 0, len(grid) - 2) 
+            indices.append(idx)
+
+        id = 0
+        count = 1
+        for i in indices:
+            id += i*count
+            count *= self._n
+
+        return id
+
+    def evaluate(self, x):
+
+        id = int(self.locate_point(x))
+
+        return  self._basis[id] @ self._interpolators[id].evaluate(x).T
+    
+    def set_up_from_files(self, operator_name, geometry_name):
+
+        basis = []
+        weights = []
+
+        for i in range(self._n ** self._d):
+
+            file_path = os.path.join("rom_data", geometry_name, operator_name, f"data_{i}.h5")
+
+            with h5py.File(file_path, "r") as f:
+                basis.append(f["basis"][:])
+                weights.append(f["weights"][:])
+
+        self.set_up(basis, weights)
