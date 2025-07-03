@@ -50,7 +50,7 @@ def evaluate_lagrange_basis(n, x, a=-1.0, b=1.0, lobatto=True):
 
     return basis
 
-def get_nodes(n, a=-1.0, b=1.0, lobatto=False):
+def get_nodes(n, a=-1.0, b=1.0, lobatto=True):
 
     if lobatto:
         from numpy.polynomial.legendre import legder, legval
