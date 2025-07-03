@@ -38,7 +38,10 @@ class Elasticity:
         interior_bc: list[tuple] = [],
         exterior_bc: list[tuple] = [],
         source: Callable = zero_function,
-        u: list[Expr] | None = None
+        u: list[Expr] | None = None,
+        K_model = None,
+        M_model = None,
+        bM_model = None
     ) -> None:
         
         self.E = E
@@ -52,6 +55,10 @@ class Elasticity:
 
         self.mu = E/(2*(1+nu))
         self.lambda_ = (E*nu)/((1+nu)*(1-2*nu))
+
+        self.K_model = K_model
+        self.M_model = M_model
+        self.bM_model = bM_model
 
         if u:
 
@@ -97,8 +104,8 @@ class Elasticity:
 
         return V, V2
     
-    def assemble_boundary_mass(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace) -> SparseMatrix:
-
+    def assemble_boundary_mass(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace, C: SparseMatrix) -> SparseMatrix:
+        
         facet_tags = unf_mesh.create_facet_tags(cut_tag=0, full_tag=0, ext_integral=True)
         ds = ufl.ds(subdomain_id=0, domain=unf_mesh, subdomain_data=facet_tags)
 
@@ -111,10 +118,11 @@ class Elasticity:
 
         ia, ja, a = M.getValuesCSR()
         M = sp.sparse.csr_matrix((a, ja, ia), shape=M.getSize())
+        M = C @ M @ C.T
 
-        return M
+        return M.toarray()
 
-    def assemble_stiffness(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace) -> SparseMatrix:
+    def assemble_stiffness(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace, C: SparseMatrix) -> SparseMatrix:
 
         u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
 
@@ -134,10 +142,11 @@ class Elasticity:
 
         ia, ja, a = A.getValuesCSR()
         K = sp.sparse.csr_matrix((a, ja, ia), shape=A.getSize())
+        K = C @ K @ C.T
 
-        return K
+        return K.toarray()
     
-    def assemble_mass(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace) -> SparseMatrix:
+    def assemble_mass(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace, C: SparseMatrix) -> SparseMatrix:
 
         u, v = ufl.TrialFunction(V), ufl.TestFunction(V)
 
@@ -148,16 +157,17 @@ class Elasticity:
 
         ia, ja, a = A.getValuesCSR()
         M = sp.sparse.csr_matrix((a, ja, ia), shape=A.getSize())
+        M = C @ M @ C.T
 
-        return M
+        return M.toarray()
 
-    def assemble_right_hand_side(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace, V2: FunctionSpace) -> np.ndarray: 
+    def assemble_right_hand_side(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace, V2: FunctionSpace, C: SparseMatrix) -> np.ndarray: 
 
         if not self.u:
-            return self._assemble_rhs_general(unf_mesh, V)
+            return C @ self._assemble_rhs_general(unf_mesh, V)
                 
         else: 
-            return self._assemble_rhs_manufatured_solution(unf_mesh, V, V2)
+            return C @ self._assemble_rhs_manufatured_solution(unf_mesh, V, V2)
 
     def _assemble_rhs_manufatured_solution(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace, V2: FunctionSpace) -> np.ndarray:
 
