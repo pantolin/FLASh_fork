@@ -27,7 +27,8 @@ from qugar.mesh.unfitted_cart_mesh import UnfittedCartMesh
 type SparseMatrix = scipy.sparse._csr.csr_matrix
 dtype = np.float64
 
-
+def c_0(x, y):
+    return (1+0*x[0])
 def c_0_x(x,y):
     return (1+0*x[0],0*x[1])
 def c_0_y(x,y):
@@ -41,17 +42,17 @@ def zero_function(x):
 
 def intersect_with_active(method):
     def wrapper(self, *args, **kwargs):
-        get_active = kwargs.pop("get_active", True)
+        # get_active = kwargs.pop("get_active", True)
 
         dofs = method(self, *args, **kwargs)
 
-        if not get_active:
-            return dofs
+        # if not get_active:
+        return dofs
 
-        if isinstance(dofs, np.ndarray):
-            return dofs[np.isin(dofs, self._active_dofs)]
+        # if isinstance(dofs, np.ndarray):
+        #     return dofs[np.isin(dofs, self._active_dofs)]
 
-        return [d[np.isin(d, self._active_dofs)] for d in dofs]
+        # return [d[np.isin(d, self._active_dofs)] for d in dofs]
 
     return wrapper
 
@@ -62,13 +63,13 @@ def intersect_with_boundary_active(method):
 
         dofs = method(self, *args, **kwargs)
 
-        if not get_active:
-            return dofs
+        # if not get_active:
+        return dofs
 
-        if isinstance(dofs, np.ndarray):
-            return dofs[np.isin(dofs, self._boundary_active_dofs)]
+        # if isinstance(dofs, np.ndarray):
+        #     return dofs[np.isin(dofs, self._boundary_active_dofs)]
 
-        return [d[np.isin(d, self._boundary_active_dofs)] for d in dofs]
+        # return [d[np.isin(d, self._boundary_active_dofs)] for d in dofs]
 
     return wrapper
 
@@ -116,12 +117,14 @@ class Subdomain:
         self._vertex_primals = True
         self._edge_primals = True
         
+        self._create_lagrange_extraction()
+        self._set_coordinates()
         self.create_edge_centers()
-        self.assemble_boundary_integrals()
         self.create_primal_dofs()
         self.create_boundary_dofs()
         
         if assemble == True:
+            self.assemble_boundary_integrals()
             self.assemble_K_and_f()
 
     @intersect_with_active
@@ -238,9 +241,16 @@ class Subdomain:
     def get_num_local_primals(self) -> int:
         return self._edges_primals[-1,-1]
     
+    def get_num_local_vertex_primals(self) -> int:
+        return self._vertices_primals[-1,-1]
+    
     def get_boundary_ranges(self) -> tuple[list[npt.NDArray[np.int32]], list[npt.NDArray[np.int32]]]:
 
         return self._vertices_boundary_ordering, self._edges_boundary_ordering
+    
+    def get_num_boundary_dofs(self):
+
+        return self._num_boundary_dofs
 
     def create_edge_centers(self) -> None:
 
@@ -305,11 +315,18 @@ class Subdomain:
             count += dofs.size
             self._edges_boundary_ordering.append(np.arange(start, count))
 
-    def create_lagrange_extraction(self, x:np.ndarray) -> SparseMatrix:
+        self._num_boundary_dofs = count 
 
-        dim = self._dim
+    def _create_lagrange_extraction(self) -> None:
+
+        unf_mesh = self.create_mesh()
+        V, V2 = self._linear_pde.create_function_space(unf_mesh, self._degree)
+        x = V.tabulate_dof_coordinates()
+        
         basis_C = self._spline_basis.get_lagrange_extraction(x)
         basis_C = basis_C.tocoo()
+
+        dim = self._dim
 
         rows = basis_C.row
         cols = basis_C.col
@@ -320,10 +337,12 @@ class Subdomain:
         data = np.concatenate([data for i in range(dim)])
 
         shape = (dim*basis_C.shape[0], dim*basis_C.shape[1])
-        C = scipy.sparse.coo_matrix((data, (rows, cols)), shape = shape).tocsr()
-
-        return C
+        self.C = scipy.sparse.coo_matrix((data, (rows, cols)), shape = shape).tocsr()
      
+    def _set_coordinates(self) -> None:
+
+        self._x = self._spline_basis.get_nodes()
+        
     def create_mesh(self) -> UnfittedCartMesh:
 
         n = self._n
@@ -337,14 +356,6 @@ class Subdomain:
 
         return unf_mesh
     
-    def greville_interpolation(self, f:Callable) -> npt.NDArray[np.float64]:
-
-        grvll_pnts = self._spline_basis.get_greville_points()
-        x, y = np.meshgrid(grvll_pnts[0], grvll_pnts[1])
-        pnts = np.column_stack((x.flatten(), y.flatten()))
-
-        return (np.array(f(pnts.T)).T).flatten()
-
     def create_C(self) -> SparseMatrix:
 
         constraints = [c_0_x, c_0_y, c_1]        
@@ -383,48 +394,78 @@ class Subdomain:
     
     def assemble_boundary_integrals(self) -> None:
 
+        # if self._linear_pde.bM_model:
+
+        #     bM = self._linear_pde.bM_model.evaluate(self._parameters.reshape(1,4))
+        #     bM = bM.reshape(self._total_size, self._total_size)
+
+        # else:
+
         unf_mesh = self.create_mesh()
         V, V2 = self._linear_pde.create_function_space(unf_mesh, self._degree)
-        M = self._linear_pde.assemble_boundary_mass(unf_mesh, V)
+        bM = self._linear_pde.assemble_boundary_mass(unf_mesh, V, self.C)
 
-        self._x = V.tabulate_dof_coordinates()
-        self.C = self.create_lagrange_extraction(self._x) # cipy.sparse.identity(M.shape[0]) #
+        self.bM = bM
 
-        self._boundary_M = M
-        self._boundary_cM = self.C @ M
-
-        self.bM = self._boundary_cM @ self.C.T 
-
-        row_sums = (self._boundary_cM).sum(axis=1)
-        self._boundary_mass = np.array(row_sums).ravel()
+        self._boundary_mass = self.bM.sum(axis=1)
         self._boundary_active_dofs = np.nonzero(self._boundary_mass)[0]
 
     def assemble_K_and_f(self) -> None:
 
         unf_mesh = self.create_mesh()
         V, V2 = self._linear_pde.create_function_space(unf_mesh, self._degree)
-        K = self._linear_pde.assemble_stiffness(unf_mesh, V)
-        M = self._linear_pde.assemble_mass(unf_mesh, V)
-        f = self._linear_pde.assemble_right_hand_side(unf_mesh, V, V2)
+
+        if self._linear_pde.K_model:
+
+            K = self._linear_pde.K_model.evaluate(self._parameters.reshape(1,4))
+            K = K.reshape(self._total_size, self._total_size)
+            K = 0.5*(K + K.T)
+
+        else: 
+
+            K = self._linear_pde.assemble_stiffness(unf_mesh, V, self.C)
+
+        M = self._linear_pde.assemble_mass(unf_mesh, V, self.C)
+        f = self._linear_pde.assemble_right_hand_side(unf_mesh, V, V2, self.C)
         
-        self.K = self.C @ K @ self.C.T 
-        self.f = self.C @ f
-        self.cM = self.C @ M
-        self.M = self.cM @ self.C.T
+        self.K = K
+        self.f = f
+        self.M = M
 
         self._active_dofs = np.nonzero(self.K.diagonal())[0]
 
+    def assemble_K(self) -> np.ndarray:
+
+        unf_mesh = self.create_mesh()
+        V, V2 = self._linear_pde.create_function_space(unf_mesh, self._degree)
+
+        return self._linear_pde.assemble_stiffness(unf_mesh, V, self.C)
+    
+    def assemble_M(self) -> np.ndarray:
+
+        unf_mesh = self.create_mesh()
+        V, V2 = self._linear_pde.create_function_space(unf_mesh, self._degree)
+
+        return self._linear_pde.assemble_mass(unf_mesh, V, self.C)
+    
+    def assemble_bM(self) -> np.ndarray:
+
+        unf_mesh = self.create_mesh()
+        V, V2 = self._linear_pde.create_function_space(unf_mesh, self._degree)
+
+        return self._linear_pde.assemble_boundary_mass(unf_mesh, V, self.C)
+
     def get_projected_function(self, f, boundary = False) -> npt.NDArray[np.float64]:
 
-        b = (np.array(f(self._x.T)).T).flatten()        
+        b = (np.array(f(self._x.T)).T).flatten() 
 
         n_dofs = self._total_size
         u = np.zeros(shape = (n_dofs))
 
         if boundary:
 
-            M = self._boundary_cM @ self.C.T 
-            y = self._boundary_cM @ b
+            M = self.bM
+            y = M @ b
 
             a_dofs = self._boundary_active_dofs
 
@@ -436,7 +477,7 @@ class Subdomain:
         else:
 
             M = self.M 
-            y = self.cM @ b
+            y = M @ b
 
             a_dofs = self._active_dofs
 
@@ -448,9 +489,9 @@ class Subdomain:
         return u
     
     def get_boundary_constraint(self, f) -> npt.NDArray[np.float64]:
-    
+
         b = (np.array(f(self._x.T)).T).flatten()
-        y = self._boundary_cM @ b 
+        y = self.bM @ b 
 
         return y 
 
@@ -478,8 +519,8 @@ class Subdomain:
         plt.title(f'Mesh nodes')
         plt.xlabel('x')
         plt.ylabel('y')
-        plt.xticks(self._spline_basis._knots[0])
-        plt.yticks(self._spline_basis._knots[1])
+        plt.xticks(self._spline_basis._nodes[0])
+        plt.yticks(self._spline_basis._nodes[1])
         plt.grid(True)
         plt.tight_layout()
         plt.show()
