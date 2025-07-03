@@ -96,6 +96,21 @@ class Lagrange2D:
         
         return f
     
+    def get_nodes(self) -> np.ndarray:
+
+        nodes_x = self._nodes[0]
+        nodes_y = self._nodes[1]
+
+        nx = nodes_x.shape[0]
+        ny = nodes_y.shape[0]
+
+        x = np.broadcast_to(nodes_x[None,:], (ny,nx)).reshape((nx*ny, 1))
+        y = np.broadcast_to(nodes_y[:, None], (ny,nx)).reshape((nx*ny, 1))
+
+        nodes = np.concatenate((x, y, 0*x), axis = 1)
+
+        return nodes
+    
     def get_lagrange_extraction(self, x: np.ndarray) -> np.ndarray:
 
         return sc.sparse.csr_matrix(self.evaluate(x).T)
@@ -191,6 +206,7 @@ class Lagrange2D:
 
             plt.figure(figsize=(6, 5))
             contour = plt.contourf(X, Y, C[:,:,i], levels=20, cmap='viridis')
+            plt.contour(X, Y, C[:,:,i], levels=[0], colors='k', linewidths=2)
 
             plt.colorbar(contour)
             plt.title(f'Contour Plot of $B{i}$')
@@ -236,3 +252,4 @@ class Lagrange2D:
     def get_total_number_basis(self) -> None:
 
         return self._total_number_basis
+
