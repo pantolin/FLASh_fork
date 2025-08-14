@@ -313,7 +313,13 @@ class MappedElasticity:
     def assemble_boundary_mass_core(self, unf_mesh: UnfittedCartMesh, basis: SomeName, degree: float) -> SparseMatrix:
 
         facet_tags = unf_mesh.create_facet_tags(cut_tag=0, full_tag=0, ext_integral=True)
-        ds = ufl.ds(subdomain_id=0, domain=unf_mesh, subdomain_data=facet_tags)
+        ds = []
+
+        hor_facet_tags = [(0, np.array([0, 0, 0, 3]))]
+        vert_facet_tags = [(1, np.arrayy([0, 1, 0, 2]))]
+
+        ds.append(ufl.ds(subdomain_id=0, domain=unf_mesh, subdomain_data=hor_facet_tags))
+        ds.append(ufl.ds(subdomain_id=1, domain=unf_mesh, subdomain_data=vert_facet_tags))
 
         nc = (basis.degree+1)**2
         V = dolfinx.fem.functionspace(unf_mesh, ("Lagrange", degree))
@@ -334,25 +340,28 @@ class MappedElasticity:
             u * v * bh[c], (c)
         )
 
-        forms = [
-            cast(CustomForm, form_custom(a[c] * ds, unf_mesh, dtype=dtype))
+        forms = [[
+            cast(CustomForm, form_custom(a[c] * ds[k], unf_mesh, dtype=dtype))
                    for c in range(nc)]
+                   for k in range(2)]
 
         nb = V.dofmap.index_map.size_local
-        A = np.zeros((nb, nb, nc))
+        A = np.zeros((nb, nb, nc, 2))
 
         for c in range(nc):
-            mat = dolfinx.fem.petsc.assemble_matrix(
-                forms[c], 
-                coeffs=forms[c].pack_coefficients()
-            )
-            mat.assemble()
-            mat_dense = mat.convert("dense")
-            A[:, :, c] = mat_dense.getDenseArray()
+            for k in range(2):
+
+                mat = dolfinx.fem.petsc.assemble_matrix(
+                    forms[k][c], 
+                    coeffs=forms[k][c].pack_coefficients()
+                )
+                mat.assemble()
+                mat_dense = mat.convert("dense")
+                A[:, :, c, k] = mat_dense.getDenseArray()
 
         return A
     
-
+    
 
     def assemble_right_hand_side(self, unf_mesh: UnfittedCartMesh, V: FunctionSpace, V2: FunctionSpace, C: SparseMatrix) -> np.ndarray: 
 
