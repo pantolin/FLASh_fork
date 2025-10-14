@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "FLASh"
+version = "0.1.0"
+description = "FLASh: Fast simulation tools for LAttice Structures"
+authors = [
+  {name = "Gonzalo Bonilla", email = "gonzalo.bonilla.moreno@gmail.com"}
+]
+readme = "README.md"
+
