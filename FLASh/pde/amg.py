@@ -126,7 +126,7 @@ class Assembler:
             self.subdomains_fi.append(fi)
             self.subdomains_fb.append(fb)
 
-            R = self.gbl_dofs_mngr.create_R_inds(s_id)
+            R = self.gbl_dofs_mngr.create_R(s_id)
 
             self.subdomains_R.append(R)
     
@@ -353,7 +353,7 @@ class Assembler:
             total_dofs = subdomain.all_dofs.size
 
             start, end = self.local_dofs_ord[s_ind, 0], self.local_dofs_ord[s_ind, 1]
-            R = self.gbl_dofs_mngr.create_R_inds(s_id)
+            R = self.gbl_dofs_mngr.create_R(s_id)
 
             u = np.zeros((total_dofs,))
             u[b_dofs] = u_b[R]
@@ -362,18 +362,6 @@ class Assembler:
             us.append(u)
 
         return us
-    
-    def get_ms(
-        self
-    ): 
-        
-        ms = []
-
-        for s_ind, s_id in enumerate(self.process_subdomains):
-            ms.append(self.gbl_dofs_mngr.subdomains[s_ind].M)
-    
-        return ms
-
 
 
 def reconstruct_solutions(

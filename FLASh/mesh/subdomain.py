@@ -805,10 +805,6 @@ class Subdomain:
 
         return self.C.T @ u
 
-    def compute_error(self, u, u_ex) -> float: 
-
-        pass
-
     def write_solution(self, u, name) -> None: 
 
         unf_mesh = self.create_mesh()

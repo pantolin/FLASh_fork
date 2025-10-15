@@ -639,48 +639,7 @@ class GlobalDofsManager:
         all_boundary_dofs = np.arange(self.get_num_boundary_dofs())
         return np.setdiff1d(all_boundary_dofs, self._boundary_dirichlet_dofs)
     
-    # def create_R(self, subdomain_id: int) -> SparseMatrix:
-
-    #     assert 0 <= subdomain_id < self.get_num_subdomains()
-
-    #     subdomain = self.subdomains[self.local_map[subdomain_id]]
-
-    #     c_2_v = self.coarse_mesh.cell_vertex_conn
-    #     c_2_e = self.coarse_mesh.cell_edge_conn
-
-    #     vertices = c_2_v[subdomain_id]
-    #     edges = c_2_e[subdomain_id]
-
-    #     local_vertices, local_edges = subdomain.get_boundary_ranges()
-
-    #     rows = []
-    #     cols = []
-    #     values = []
-
-    #     for vertex, local_vertex in zip(vertices, local_vertices):
-    #         if local_vertex.size > 0:
-    #             start, end = self._vertices_dofs_ranges[vertex]
-    #             rows.append(local_vertex)
-    #             cols.append(np.arange(start, end))
-    #             values.append(np.ones(end-start))
-
-    #     for edge, local_edge in zip(edges, local_edges):
-    #         start, end = self._edges_dofs_ranges[edge]
-    #         rows.append(local_edge)
-    #         cols.append(np.arange(start, end))
-    #         values.append(np.ones(end-start))
-
-    #     rows = np.hstack(rows)
-    #     cols = np.hstack(cols)
-    #     values = np.hstack(values)
-
-    #     R = scipy.sparse.csr_matrix(
-    #         (values, (rows, cols)), shape=(rows.size, self.get_num_boundary_dofs())
-    #     )
-
-    #     return R
-    
-    def create_R_inds(self, subdomain_id: int) -> SparseMatrix:
+    def create_R(self, subdomain_id: int) -> SparseMatrix:
 
         assert 0 <= subdomain_id < self.get_num_subdomains()
 
@@ -711,46 +670,7 @@ class GlobalDofsManager:
 
         return cols
     
-    # def create_Rc(self, subdomain_id: int) -> SparseMatrix:
-
-        # assert 0 <= subdomain_id < self.get_num_subdomains()
-
-        # subdomain = self.subdomains[self.local_map[subdomain_id]]
-
-        # c_2_v = self.coarse_mesh.cell_vertex_conn
-        # c_2_e = self.coarse_mesh.cell_edge_conn
-
-        # vertices = c_2_v[subdomain_id]
-        # edges = c_2_e[subdomain_id]
-
-        # local_vertices_range, local_edges_range = subdomain.get_primal_ranges()
-
-        # cols = []
-
-        # for vertex, local_range in zip(vertices, local_vertices_range):
-        #     if local_range[1] > local_range[0]:
-        #         start, end = self._vertices_primal_ranges[vertex]
-        #         rows.append(np.arange(local_range[0], local_range[1]))
-        #         cols.append(np.arange(start, end))
-        #         values.append(np.ones(end-start))
-
-        # for edge, local_range in zip(edges, local_edges_range):
-        #     start, end = self._edge_primal_ranges[edge]
-        #     rows.append(np.arange(local_range[0], local_range[1]))
-        #     cols.append(np.arange(start, end))
-        #     values.append(np.ones(end-start))
-
-        # rows = np.hstack(rows)
-        # cols = np.hstack(cols)
-        # values = np.hstack(values)
-
-        # Rc = scipy.sparse.csr_matrix(
-        #     (values, (rows, cols)), shape=(rows.size, self.get_num_primals())
-        # )
-
-        # return Rc
-    
-    def create_Rc_inds(self, subdomain_id: int) -> SparseMatrix:
+    def create_Rc(self, subdomain_id: int) -> SparseMatrix:
 
         assert 0 <= subdomain_id < self.get_num_subdomains()
 
@@ -854,21 +774,16 @@ class GlobalDofsManager:
         
         return fs
 
-    def compute_error(self, us) -> float: 
+    def compute_error(self, us, us_ex) -> float: 
 
-        if not self.linear_pde.u:
-            if self.communicators.global_comm.Get_rank() == 0: 
-                print("Warning! No exact solution to compute the error!\n")
-            return None
-        
-        u_callable = self.linear_pde.u_callable
-            
         error_local = 0
         norm_local = 0
 
-        for u, subdomain in zip(us, self.subdomains):
-            error_local += subdomain.compute_error(u, u_callable)**2
-            norm_local += subdomain.compute_error(0*u, u_callable)**2
+        for u, u_ex, subdomain in zip(us, us_ex, self.subdomains):
+
+            M = subdomain.M
+            error_local += (u_ex - u).T @ M @ (u_ex - u)
+            norm_local += u_ex.T @ M @ u_ex
 
         error = np.sqrt(self.communicators.global_comm.allreduce(error_local, op=MPI.SUM))
         norm = np.sqrt(self.communicators.global_comm.allreduce(norm_local, op=MPI.SUM))
@@ -944,65 +859,64 @@ class GlobalDofsManager:
             pl.show_axes()
             pl.show()
 
-            if False:
-                if dim == 2:
+            # if dim == 2:
 
-                    pl = pv.Plotter(shape=(1, 2))
+            #     pl = pv.Plotter(shape=(1, 2))
 
-                    for s_id, u in zip(s_inds, us):
+            #     for s_id, u in zip(s_inds, us):
 
-                        vertices = c_2_v.links(s_id)
+            #         vertices = c_2_v.links(s_id)
 
-                        p0 = x[vertices[0]][:2]
-                        p1 = x[vertices[3]][:2]
+            #         p0 = x[vertices[0]][:2]
+            #         p1 = x[vertices[3]][:2]
 
-                        comm = MPI.COMM_SELF
+            #         comm = MPI.COMM_SELF
 
-                        impl_func = levelset(list(self.parameters[vertices]), p0, p1)
+            #         impl_func = levelset(list(self.parameters[vertices]), p0, p1)
 
-                        unf_mesh = create_unfitted_impl_Cartesian_mesh(
-                            comm, impl_func, n, p0, p1, exclude_empty_cells=False
-                        )
+            #         unf_mesh = create_unfitted_impl_Cartesian_mesh(
+            #             comm, impl_func, n, p0, p1, exclude_empty_cells=False
+            #         )
 
-                        V = dolfinx.fem.functionspace(unf_mesh, ("Lagrange", degree, (dim,)))
-                        uh = dolfinx.fem.Function(V)
-                        uh.x.array[:] = u
+            #         V = dolfinx.fem.functionspace(unf_mesh, ("Lagrange", degree, (dim,)))
+            #         uh = dolfinx.fem.Function(V)
+            #         uh.x.array[:] = u
 
-                        reparam_degree = 3
-                        reparam = qugar.reparam.create_reparam_mesh(unf_mesh, degree=reparam_degree, levelset=False)
-                        reparam_mesh = reparam.create_mesh()
+            #         reparam_degree = 3
+            #         reparam = qugar.reparam.create_reparam_mesh(unf_mesh, degree=reparam_degree, levelset=False)
+            #         reparam_mesh = reparam.create_mesh()
 
-                        V_reparam = dolfinx.fem.functionspace(reparam_mesh, ("CG", reparam_degree, (dim,)))
-                        uh_reparam = dolfinx.fem.Function(V_reparam)
+            #         V_reparam = dolfinx.fem.functionspace(reparam_mesh, ("CG", reparam_degree, (dim,)))
+            #         uh_reparam = dolfinx.fem.Function(V_reparam)
 
-                        cmap = reparam_mesh.topology.index_map(reparam_mesh.topology.dim)
-                        num_cells = cmap.size_local + cmap.num_ghosts
-                        cells = np.arange(num_cells, dtype=np.int32)
+            #         cmap = reparam_mesh.topology.index_map(reparam_mesh.topology.dim)
+            #         num_cells = cmap.size_local + cmap.num_ghosts
+            #         cells = np.arange(num_cells, dtype=np.int32)
 
-                        interpolation_data = dolfinx.fem.create_interpolation_data(V_reparam, V, cells, padding=1.0e-14)
-                        uh_reparam.interpolate_nonmatching(uh, cells, interpolation_data=interpolation_data)
+            #         interpolation_data = dolfinx.fem.create_interpolation_data(V_reparam, V, cells, padding=1.0e-14)
+            #         uh_reparam.interpolate_nonmatching(uh, cells, interpolation_data=interpolation_data)
 
-                        reparam_pv = qugar.plot.reparam_mesh_to_PyVista(reparam)
-                        pv_mesh = reparam_pv.get("reparam")
+            #         reparam_pv = qugar.plot.reparam_mesh_to_PyVista(reparam)
+            #         pv_mesh = reparam_pv.get("reparam")
 
-                        ux = uh_reparam.x.array[0::2]
-                        uy = uh_reparam.x.array[1::2]
+            #         ux = uh_reparam.x.array[0::2]
+            #         uy = uh_reparam.x.array[1::2]
 
-                        pl.subplot(0, 0)
-                        mesh_ux = pv_mesh.copy()
-                        mesh_ux.point_data["ux"] = ux
-                        mesh_ux.set_active_scalars("ux")
-                        pl.add_mesh(mesh_ux, show_edges=False)
-                        pl.show_axes()
+            #         pl.subplot(0, 0)
+            #         mesh_ux = pv_mesh.copy()
+            #         mesh_ux.point_data["ux"] = ux
+            #         mesh_ux.set_active_scalars("ux")
+            #         pl.add_mesh(mesh_ux, show_edges=False)
+            #         pl.show_axes()
 
-                        pl.subplot(0, 1)
-                        mesh_uy = pv_mesh.copy()
-                        mesh_uy.point_data["uy"] = uy
-                        mesh_uy.set_active_scalars("uy")
-                        pl.add_mesh(mesh_uy, show_edges=False)
-                        pl.show_axes()
+            #         pl.subplot(0, 1)
+            #         mesh_uy = pv_mesh.copy()
+            #         mesh_uy.point_data["uy"] = uy
+            #         mesh_uy.set_active_scalars("uy")
+            #         pl.add_mesh(mesh_uy, show_edges=False)
+            #         pl.show_axes()
 
-                    pl.link_views()
-                    pl.show()
+            #     pl.link_views()
+            #     pl.show()
 
 

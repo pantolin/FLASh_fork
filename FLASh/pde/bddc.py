@@ -154,7 +154,7 @@ class Assembler:
             self.subdomains_fi.append(fi)
             self.subdomains_fb.append(fb)
 
-            R = self.gbl_dofs_mngr.create_R_inds(s_id)
+            R = self.gbl_dofs_mngr.create_R(s_id)
 
             self.subdomains_R.append(R)
     
@@ -237,8 +237,8 @@ class Assembler:
 
             subdomain = self.gbl_dofs_mngr.subdomains[s_ind]
 
-            R = self.gbl_dofs_mngr.create_R_inds(s_id)
-            Rc = self.gbl_dofs_mngr.create_Rc_inds(s_id)
+            R = self.gbl_dofs_mngr.create_R(s_id)
+            Rc = self.gbl_dofs_mngr.create_Rc(s_id)
             D = self.gbl_dofs_mngr.create_D(s_id)
             C = subdomain.create_C().toarray()
 
@@ -717,7 +717,7 @@ class Assembler:
             total_dofs = subdomain.all_dofs.size
 
             start, end = self.local_dofs_ord[s_ind, 0], self.local_dofs_ord[s_ind, 1]
-            R = self.gbl_dofs_mngr.create_R_inds(s_id)
+            R = self.gbl_dofs_mngr.create_R(s_id)
 
             u = np.zeros((total_dofs,))
             u[b_dofs] = u_b[R]
@@ -726,50 +726,6 @@ class Assembler:
             us.append(u)
 
         return us
-
-    def reconstruct_from_ub(
-            self, 
-            ub: npt.NDArray[np.float64],
-        ) -> list[npt.NDArray[np.float64]]:
-
-        n_b = self.gbl_dofs_mngr.get_num_boundary_dofs()
-        act_boundary_dofs = self.gbl_dofs_mngr.get_active_boundary_dofs()
-        d_dofs = self.gbl_dofs_mngr.get_dirichlet_boundary_dofs()
-
-        u_b = np.zeros(shape = (n_b))
-
-        u_b[act_boundary_dofs] = ub
-        u_b[d_dofs] = self.gbl_dofs_mngr.get_dirichlet_boundary_values()
-
-        u = np.zeros(self.total_local_dofs)
-
-        if self.comm.Get_rank() == 0:
-            u[self.local_dofs_ord[-1,-1]:] = ub
-
-        for s_ind, s_id in enumerate(self.process_subdomains):
-
-            Uib = self.subdomains_Uib[s_ind]
-            Lu_Kii = self.subdomains_Lu_Kii[s_ind]
-            Piv_Kii = self.subdomains_Piv_Kii[s_ind]
-            fi = self.subdomains_fi[s_ind]
-
-            R = self.subdomains_R[s_ind]
-
-            start, end = self.local_dofs_ord[s_ind,0], self.local_dofs_ord[s_ind,1]
-            u[start:end] = scipy.linalg.lu_solve((Lu_Kii, Piv_Kii), fi) - Uib @ u_b[R]
-
-        return u
-    
-    def get_ms(
-        self
-    ): 
-        
-        ms = []
-
-        for s_ind, s_id in enumerate(self.process_subdomains):
-            ms.append(self.gbl_dofs_mngr.subdomains[s_ind].M)
-    
-        return ms
 
 
 class MatrixOperator:
@@ -810,30 +766,6 @@ def reconstruct_solutions(
             same structure as the one of the reference subdomain, but placed
             at its corresponding position.
     """
-    us = assembler.reconstruct_Us(u)
-
-    return us
-
-def reconstruct_solutions_from_ub(
-        ub: npt.NDArray[np.float64],
-        assembler: Assembler
-    ) -> list[dolfinx.fem.Function]:
-    """Reconstructs the solution function of every subdomain, starting from the
-    multipliers lambda_ at the interfaces (the solution of the global dual
-    problem).
-
-    Args:
-        gbl_dofs_mngr (GlobalDofsManager): Global dofs manager.
-        lambda_ (npt.NDArray[np.float64]): Solution of the dual problem.
-        assembler (Assembler): Fetidp operators manager.
-
-    Returns:
-        list[dolfinx.fem.Function]: List of functions describing the solution
-            in every single subdomain. The FEM space of every function has the
-            same structure as the one of the reference subdomain, but placed
-            at its corresponding position.
-    """
-    u = assembler.reconstruct_from_ub(ub)
     us = assembler.reconstruct_Us(u)
 
     return us
@@ -923,39 +855,6 @@ class BDDC(BaseSolver):
             print("Solve time: ", solve_time)
             print("Total time: ", self.stats["total time"])
             print("\n")
-
-        # self.assembler.internal_tracker = []
-
-        # start_time = MPI.Wtime()
-
-        # self.petsc_solver.solve(self.f_petsc, self.u_petsc)
-        # self.solution = self.u_petsc
-
-        # solve_time = MPI.Wtime() - start_time
-
-        # iterations = self.petsc_solver.getIterationNumber()
-        # rank = self.communicators.global_comm.Get_rank()
-
-        # self.stats["solve time"] = solve_time
-        # self.stats["total time"] = self.stats["setup time"] + self.stats["assemble time"] + solve_time
-        # self.stats["global iterations"] = iterations,
-        # self.stats["local iterations"] = sum(tracker.niter for tracker in self.assembler.internal_tracker) / len(self.assembler.internal_tracker),
-        
-        # if rank == 0 and self.opts.get("print_stats", True):
-
-        #     print("#### BDDC Solver ####\n")
-        #     print(f"Number of outer iterations: {iterations}")
-        #     print("Number of internal iterations:")
-
-        #     for iter, tracker in enumerate(self.assembler.internal_tracker):
-        #         print(f"Iteration {iter}: {tracker.niter} iterations.")
-        #     print("\n")
-
-        #     print("Setup time: ", self.stats["setup time"])
-        #     print("Assemble time: ", self.stats["assemble time"])
-        #     print("Solve time: ", solve_time)
-        #     print("Total time: ", self.stats["total time"])
-        #     print("\n")
 
     def get_solution(self):
 

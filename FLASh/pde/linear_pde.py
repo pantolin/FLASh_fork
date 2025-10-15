@@ -71,11 +71,22 @@ def compute_K(weighted_basis, basis, coeffs, n_b):
                         for p in range(2):
                             for q in range(2):
                                 val += weighted_basis[p, m, i] * basis[q, m, j] * coeffs[m, p, k, q, l]
-
                     K[i, j, k, l] = val
-
-
     return K
+
+@nb.njit(parallel=True)
+def compute_K_core(basis_vals, weighted_vals, n_b, n_c):
+    K_core = np.zeros((n_b, n_b, 2, 2, n_c))
+    for i in nb.prange(n_b):
+        for j in range(n_b):
+            for k in range(2):
+                for l in range(2):
+                    for c in range(n_c):
+                        val = 0.0
+                        for m in range(weighted_vals.shape[0]):
+                            val += basis_vals[k, m, i] * basis_vals[l, m, j] * weighted_vals[m, c]
+                        K_core[i, j, k, l, c] = val
+    return K_core
 
 def create_facet_quadrature(
     facet_points: npt.NDArray[dtype],
@@ -313,11 +324,13 @@ class Elasticity:
         K_core = np.zeros((n_b, n_b, 2, 2, n_c))  
 
         weighted_vals = approx_basis_vals * quad.weights[:, None]
-        for i in range(n_b):
-            for j in range(i, n_b):
-                K_core[i, j, ...] = np.einsum("km,lm,mc->klc", basis_vals[:,:,i], basis_vals[:,:,j], weighted_vals)
-                if i != j:
-                    K_core[j, i, ...] = K_core[i, j, ...]
+        K_core = compute_K_core(basis_vals, weighted_vals, n_b, n_c)
+        # K_core = np.einsum("kmi,lmj,mc->ijklc", basis_vals, basis_vals, weighted_vals)
+        # for i in range(n_b):
+        #     for j in range(i, n_b):
+        #         K_core[i, j, ...] = np.einsum("km,lm,mc->klc", basis_vals[:,:,i], basis_vals[:,:,j], weighted_vals)
+        #         if i != j:
+        #             K_core[j, i, ...] = K_core[i, j, ...]
 
         return K_core
 
