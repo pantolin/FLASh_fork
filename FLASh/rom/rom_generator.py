@@ -15,7 +15,8 @@ from FLASh.rom import (
 
 from FLASh.mesh import (
     SomeName,
-    gyroid
+    gyroid,
+    Lagrange2D
 )
 
 from FLASh.pde import Elasticity
@@ -38,7 +39,7 @@ def bcast_array(array, comm):
 
 schwarz_diamond = gyroid.SchwarzDiamond().make_function()
 
-def generate_snapshots(parameters, levelset = schwarz_diamond, degree = 8, p = 2, operator_name = "K_core"):
+def generate_snapshots(parameters, levelset = schwarz_diamond, degree = 8, p = 2, operator_name = "K_core", get_full_K_core = False):
 
     p0 = np.array([0.0, 0.0])
     p1 = np.array([1.0, 1.0])
@@ -46,36 +47,59 @@ def generate_snapshots(parameters, levelset = schwarz_diamond, degree = 8, p = 2
     comm = MPI.COMM_SELF
 
     n = [1, 1]
-    degree = 8
-    p = 2
 
-    mapped_elasticity_pde = Elasticity()
-    basis = SomeName(p)
+    elasticity_pde = Elasticity()
+    basis = Lagrange2D(degree, np.zeros(2), np.ones(2)) 
+    element = SomeName(p)
 
     snapshots = []
+
+    if get_full_K_core:
+
+        impl_func = levelset(parameters, p0, p1).cpp_object
+
+        cell_breaks = [np.linspace(0.0, 1.0, n[dir] + 1, dtype=dtype) for dir in range(2)]
+
+        grid = qugar.cpp.create_cart_grid(cell_breaks)
+        unf_mesh = qugar.cpp.create_unfitted_impl_domain(impl_func, grid)
+
+        return elasticity_pde.assemble_stiffness_core(unf_mesh, basis, element, full_cell=True)
 
     for parameters_i in parameters:
 
         impl_func = levelset(parameters_i, p0, p1).cpp_object
 
-        n_cells = [1] * 2
-        cell_breaks = [np.linspace(0.0, 1.0, n_cells[dir] + 1, dtype=dtype) for dir in range(2)]
+        cell_breaks = [np.linspace(0.0, 1.0, n[dir] + 1, dtype=dtype) for dir in range(2)]
 
         grid = qugar.cpp.create_cart_grid(cell_breaks)
         unf_mesh = qugar.cpp.create_unfitted_impl_domain(impl_func, grid)
 
         if operator_name == "K_core":
-            A = mapped_elasticity_pde.assemble_stiffness_core(unf_mesh, basis, degree)
+            A = elasticity_pde.assemble_stiffness_core(unf_mesh, basis, element)
         elif operator_name == "M_core":
-            A = mapped_elasticity_pde.assemble_mass_core(unf_mesh, basis, degree)
+            A = elasticity_pde.assemble_mass_core(unf_mesh, basis, element)
         elif operator_name == "bM_core":
-            A = mapped_elasticity_pde.assemble_boundary_mass_core(unf_mesh, basis, degree)
+            A = elasticity_pde.assemble_boundary_mass_core(unf_mesh, basis, element)
 
         snapshots.append(A)
 
     return snapshots
 
-def generate_rom_model(operator_name, geometry_name, epsilon_0 = 0.1, epsilon_1 = 0.9, n = 2, p = 1, d = 4, directory = "rom_data"):
+def generate_rom_model(
+        operator_name, 
+        geometry_name, 
+        levelset = schwarz_diamond, 
+        epsilon_0 = 0.1, 
+        epsilon_1 = 0.9, 
+        n = 2, 
+        p = 2, 
+        d = 4, 
+        samples_per_basis = 20,
+        batch_size = 100,
+        basis_size = 10,
+        basis_oversample = 5,
+        directory = "rom_data"
+    ):
 
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -84,8 +108,7 @@ def generate_rom_model(operator_name, geometry_name, epsilon_0 = 0.1, epsilon_1 
     folder = os.path.join(directory, geometry_name, operator_name)
     os.makedirs(folder, exist_ok=True)
 
-    total_points = 20
-    batch_size = 100
+    total_points = samples_per_basis
 
     epsilon = np.linspace(epsilon_0, epsilon_1, n+1)
 
@@ -102,7 +125,7 @@ def generate_rom_model(operator_name, geometry_name, epsilon_0 = 0.1, epsilon_1 
         epsilon_0 = epsilon[index]
         epsilon_1 = epsilon[index+1]
 
-        print(f"Interpolator idx: {index}, id: {id}, limits: {epsilon_0}, {epsilon_1}.\n")
+        print(f"Interpolator id: {id}, limits: {epsilon_0}, {epsilon_1}.\n")
 
         if rank == 0:
             sampler = sp.stats.qmc.LatinHypercube(d=4)
@@ -115,7 +138,12 @@ def generate_rom_model(operator_name, geometry_name, epsilon_0 = 0.1, epsilon_1 
 
         local_parameters = parameters[local_snapshots]
 
-        snapshots = generate_snapshots(local_parameters)
+        snapshots = generate_snapshots(
+            local_parameters,
+            levelset,
+            operator_name=operator_name
+        )
+
         snapshots = comm.gather(snapshots, root=0)
         U = None
         I = None
@@ -125,7 +153,7 @@ def generate_rom_model(operator_name, geometry_name, epsilon_0 = 0.1, epsilon_1 
             snapshots = np.array(snapshots) 
             snapshots = snapshots.reshape((snapshots.shape[0], -1)).T
 
-            U, _, _ = compute_rSVD_basis(snapshots, k = 10, set_n = True, n = 5)
+            U, _, _ = compute_rSVD_basis(snapshots, k = basis_size + basis_oversample, set_n = True, n = basis_size)
             I = np.array(compute_magic_points(U), dtype=int)
 
         comm.barrier()

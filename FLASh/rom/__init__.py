@@ -13,6 +13,7 @@ from FLASh.rom.utils import (
 )
 
 from FLASh.rom.rom_generator import (
+    generate_snapshots,
     generate_rom_model
 )
 
@@ -26,5 +27,6 @@ __all__ = [
     "assemble_snapshot_matrix",
     "interpolate_coefficients",
     "create_RBF_interpolator",
+    "generate_snapshots",
     "generate_rom_model"
 ]

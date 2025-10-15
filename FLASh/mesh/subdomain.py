@@ -631,7 +631,7 @@ class Subdomain:
         
         unf_domain = self.create_qugar_mesh()
         
-        return self._linear_pde.assemble_stiffness_core(unf_domain, self._basis, element.evaluate_basis)
+        return self._linear_pde.assemble_stiffness_core(unf_domain, self._basis, element)
     
     def assemble_M_core(self, p = None) -> np.ndarray:
 

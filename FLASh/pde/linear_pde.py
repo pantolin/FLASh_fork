@@ -306,7 +306,7 @@ class Elasticity:
             quad = qugar.cpp.create_quadrature(unf_domain, np.array([0]), n_quad_pts)
 
         basis_vals = np.array(basis.evaluate_derivative(quad.points))
-        approx_basis_vals = approx_basis(quad.points) 
+        approx_basis_vals = approx_basis.evaluate_basis(quad.points) 
 
         n_b = basis_vals.shape[2]
         n_c = approx_basis_vals.shape[1] 

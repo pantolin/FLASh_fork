@@ -78,16 +78,16 @@ class Schoen(Levelset):
 
 class SchwarzPrimitive(Levelset):
 
-    def __init__(self, **kwards):
-        super().__init__(**kwards)
+    def __init__(self, periods=np.array([1, 1]), z=0.5, negative=False):
+        super().__init__(periods=periods, z=z, negative=negative)
 
     def surface_func_constructor(self):
         return impl.create_Schwarz_Primitive
 
 class SchoenFRD(Levelset):
 
-    def __init__(self):
-        super().__init__(negative=True)
+    def __init__(self, periods=np.array([1, 1]), z=0.0, negative=True):
+        super().__init__(periods=periods, z=z, negative=negative)
 
     def surface_func_constructor(self):
         return impl.create_Schoen_FRD
