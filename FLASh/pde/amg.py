@@ -106,8 +106,8 @@ class Assembler:
 
             subdomain = self.gbl_dofs_mngr.subdomains[s_ind]
 
-            i_dofs = subdomain.get_interior_dofs()
-            b_dofs = subdomain.get_boundary_dofs()
+            i_dofs = subdomain.interior_dofs
+            b_dofs = subdomain.boundary_dofs
 
             K, f = subdomain.K, subdomain.f
 
@@ -348,9 +348,9 @@ class Assembler:
 
             subdomain = self.gbl_dofs_mngr.subdomains[s_ind]
 
-            i_dofs = subdomain.get_interior_dofs()
-            b_dofs = subdomain.get_boundary_dofs()
-            total_dofs = subdomain.get_all_dofs().size
+            i_dofs = subdomain.interior_dofs
+            b_dofs = subdomain.boundary_dofs
+            total_dofs = subdomain.all_dofs.size
 
             start, end = self.local_dofs_ord[s_ind, 0], self.local_dofs_ord[s_ind, 1]
             R = self.gbl_dofs_mngr.create_R_inds(s_id)
