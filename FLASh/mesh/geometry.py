@@ -149,7 +149,9 @@ class SomeName:
         self.basis = sp.BSplineBasis(degree+1, [0] * (degree + 1) + [1] * (degree + 1)) 
         self.n = (degree+1)**2
 
-    def assemble_mass(
+        self._set_quadrature()
+
+    def _set_quadrature(
         self
     ) -> None:
         
@@ -157,11 +159,19 @@ class SomeName:
         xi, w = leggauss(n_quad)
 
         x = 0.5 * (xi + 1)
-        w = 0.5 * w
+        self.w = 0.5 * w
 
-        f = self.basis.evaluate(x)
+        self.b = self.basis.evaluate(x)
 
-        self.m = (w[:,None,None] * f[:,:,None] * f[:,None,:]).sum(axis=0)
+        X, Y = np.meshgrid(x, x, indexing='ij')
+        xy = np.stack((X, Y), axis=-1)
+        self.xy = xy.reshape(-1, 2)
+
+    def assemble_mass(
+        self
+    ) -> None:
+
+        self.m = (self.w[:,None,None] * self.b[:,:,None] * self.b[:,None,:]).sum(axis=0)
         self.l = np.linalg.cholesky(self.m)
 
     def fit(
@@ -169,22 +179,10 @@ class SomeName:
         fun: Callable
     ) -> None:
         
-        n_quad = self.degree + 1
-        xi, w = leggauss(n_quad)
+        f = fun(self.xy)
+        f = f.reshape(self.degree+1, self.degree+1, *f.shape[1:])
 
-        x = 0.5 * (xi + 1)
-        w = 0.5 * w
-
-        b = self.basis.evaluate(x)
-
-        X, Y = np.meshgrid(x, x, indexing='ij')
-        xy = np.stack((X, Y), axis=-1)
-        xy = xy.reshape(-1, 2)
-
-        f = fun(xy)
-        f = f.reshape(x.size, x.size, *f.shape[1:])
-
-        rhs = np.einsum("ij...,ik,jl,i,j->kl...", f, b, b, w, w)
+        rhs = np.einsum("ij...,ik,jl,i,j->kl...", f, self.b, self.b, self.w, self.w)
         inv_m = np.linalg.inv(self.m)
         self.c = np.einsum("ki,lj,kl...->ij...", inv_m, inv_m, rhs)
 

@@ -140,7 +140,7 @@ def generate_rom_model(
 
         snapshots = generate_snapshots(
             local_parameters,
-            levelset,
+            levelset=levelset,
             operator_name=operator_name
         )
 
@@ -174,7 +174,12 @@ def generate_rom_model(
         for batch_i in range(0, len(local_parameters), batch_size):
             batch_params = local_parameters[batch_i:batch_i + batch_size]
 
-            snapshots = generate_snapshots(batch_params)
+            snapshots = generate_snapshots(
+                local_parameters,
+                levelset=levelset,
+                operator_name=operator_name
+            )
+
             snapshots = np.array(snapshots)
 
             S = snapshots.reshape((snapshots.shape[0], -1)).T
