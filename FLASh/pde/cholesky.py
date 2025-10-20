@@ -408,6 +408,9 @@ class Cholesky(BaseSolver):
         if rank == 0 and self.opts.get("print_stats", True):
 
             print("#### Cholesky Solver ####\n")
+
+            print(f"Number of subdomains: {self.gbl_dofs_mngr.get_num_subdomains()}.")
+            print(f"Number of global active dofs: {self.assembler.total_act_dofs}.\n")
             
             print("Setup time: ", self.stats["setup time"])
             print("Assemble time: ", self.stats["assemble time"])

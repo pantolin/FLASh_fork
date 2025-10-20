@@ -147,7 +147,7 @@ class Assembler:
         for s_ind, s_id in enumerate(self.process_subdomains):
 
             subdomain = self.gbl_dofs_mngr.subdomains[s_ind]
-            i_dofs = subdomain.get_interior_dofs()
+            i_dofs = subdomain.interior_dofs
             active_dofs_local[s_id] = i_dofs.size
             local_number_of_dofs[rank] += i_dofs.size
 
@@ -255,8 +255,13 @@ class Assembler:
 
         # If running in parallel with MPI, use block Jacobi + ILU
         # pc.setType('bjacobi')
-        # subpc = pc.getSubPC()
-        # subpc.setType('ilu')
+        # subksps = pc.getFieldSplitSubKSP()
+        # # Returns a list of (possibly one) KSPs, each with its own PC
+        # for ksp in subksps:
+        #     subpc = ksp.getPC()
+
+        # AMG
+        # pc.setType('gamg')  
 
         # Solver tolerances
         ksp.setTolerances(rtol=1e-8)
@@ -428,8 +433,10 @@ class AMG(BaseSolver):
 
             print("#### AMG Solver ####\n")
 
+            print(f"Number of subdomains: {self.gbl_dofs_mngr.get_num_subdomains()}.")
+            print(f"Number of global active dofs: {self.assembler.total_act_dofs}.\n")
+
             print(f"Number of iterations: {iterations}")
-            print("Number of internal iterations:")
             print("\n")
 
             print("Setup time: ", self.stats["setup time"])

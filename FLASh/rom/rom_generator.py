@@ -175,7 +175,7 @@ def generate_rom_model(
             batch_params = local_parameters[batch_i:batch_i + batch_size]
 
             snapshots = generate_snapshots(
-                local_parameters,
+                batch_params,
                 levelset=levelset,
                 operator_name=operator_name
             )

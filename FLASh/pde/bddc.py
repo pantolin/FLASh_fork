@@ -585,7 +585,7 @@ class Assembler:
         S = LinearOperator((n_act, n_act), matvec = self.apply_S)
 
         if self.comm.Get_rank() == 0:
-            tracker = residual_tracker(self.apply_S, True)
+            tracker = residual_tracker(self.apply_S, False)
         else:
             tracker = residual_tracker(self.apply_S)
 
@@ -601,7 +601,7 @@ class Assembler:
 
         # y_sol, exit_code = gmres(S, b, M = S0, rtol = 1e-16, atol=1e-8, x0 = np.zeros(shape=(n_act,)), callback = tracker)
 
-        y_sol, exit_code = cg(S, b, M = S0, rtol = 1e-12, maxiter= 500, x0 = np.zeros(shape=(n_act,)), callback = tracker)
+        y_sol, exit_code = cg(S, b, M = S0, rtol = 1e-12, maxiter= 30, x0 = np.zeros(shape=(n_act,)), callback = tracker)
         self.internal_tracker.append(tracker)
 
         if self.comm.Get_rank() == 0:
@@ -844,10 +844,12 @@ class BDDC(BaseSolver):
         if rank == 0 and self.opts.get("print_stats", True):
 
             print("#### BDDC Solver ####\n")
-            print("Number of iterations:")
 
-            for iter, tracker in enumerate(self.assembler.internal_tracker):
-                print(f"Iteration {iter}: {tracker.niter} iterations.")
+            print(f"Number of subdomains: {self.gbl_dofs_mngr.get_num_subdomains()}.")
+            print(f"Number of global active dofs: {self.assembler.total_act_dofs}.\n")
+
+            for tracker in self.assembler.internal_tracker:
+                print(f"Number of iterations: {tracker.niter}.")
             print("\n")
 
             print("Setup time: ", self.stats["setup time"])
