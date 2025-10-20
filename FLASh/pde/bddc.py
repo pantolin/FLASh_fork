@@ -601,7 +601,7 @@ class Assembler:
 
         # y_sol, exit_code = gmres(S, b, M = S0, rtol = 1e-16, atol=1e-8, x0 = np.zeros(shape=(n_act,)), callback = tracker)
 
-        y_sol, exit_code = cg(S, b, M = S0, rtol = 1e-12, maxiter= 30, x0 = np.zeros(shape=(n_act,)), callback = tracker)
+        y_sol, exit_code = cg(S, b, M = S0, rtol = 1e-8, maxiter= 100, x0 = np.zeros(shape=(n_act,)), callback = tracker)
         self.internal_tracker.append(tracker)
 
         if self.comm.Get_rank() == 0:

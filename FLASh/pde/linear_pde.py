@@ -74,7 +74,7 @@ def compute_K(weighted_basis, basis, coeffs, n_b):
                     K[i, j, k, l] = val
     return K
 
-@nb.njit(parallel=True)
+@nb.njit
 def compute_K_core(basis_vals, weighted_vals, n_b, n_c):
     K_core = np.zeros((n_b, n_b, 2, 2, n_c))
     for i in nb.prange(n_b):

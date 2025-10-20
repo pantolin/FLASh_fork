@@ -116,6 +116,9 @@ class GlobalDofsManager:
                 )
             )
 
+            ### Assembly progress bar (bug if the number of subdomains is not the samme for al process) 
+            # locking communication!!! ###
+
             done_local = np.array(s_ind + 1, dtype="i")
             done_global = np.array(0, dtype="i")
             communicators.global_comm.Reduce(done_local, done_global, op=MPI.SUM, root=0)
@@ -124,7 +127,6 @@ class GlobalDofsManager:
                 progress = done_global / N
                 sys.stdout.write(f"\033[F\033[KSubdomains assembly: {progress:.1%}\n")
                 sys.stdout.flush()
-
 
 
         return GlobalDofsManager(geometry, subdomains, linear_pde, communicators)
