@@ -2,9 +2,9 @@ import numpy as np
 import scipy as sp
 
 import os
+import h5py
 
 from mpi4py import MPI
-from matplotlib import pyplot as plt
 
 from FLASh.rom import (
     compute_rSVD_basis, 
@@ -17,8 +17,6 @@ from FLASh.rom import (
 from FLASh.mesh import (
     gyroid,
 )
-
-from FLASh.utils import Plotter
 
 from itertools import product
 dtype = np.float64
@@ -40,57 +38,6 @@ def compute_error(U, S, I):
 
     error = np.linalg.norm(S - approximations, axis=0, ord=np.inf) / np.linalg.norm(S, axis=0, ord=np.inf)
     return np.mean(error)
-
-class Plots(Plotter):
-
-    @classmethod
-    def plot_1(
-        cls,
-        size,
-        data,
-        path: str,
-        dir: str,
-        title: str,
-        xlabel: str = "$x$",
-        ylabel_left: str = "$y_1$",
-        legend_loc=(0.5, -0.15),
-        nc=3
-    ) -> None:
-
-        cls._folder = os.path.join(os.path.join(os.getcwd(), "figs"), dir)
-        cls.__clear__()
-        cls.__setup_config__()
-
-        fig, ax = plt.subplots(figsize=size)
-
-        fig.suptitle(title, fontsize=16)
-
-
-        xs = data.get("x", [])
-        ys = data.get("y", [])
-        labels = data.get("labels", [])
-
-        colors = ["blue", "red", "orange", "green"]
-
-        for x, y, label, color in zip(xs, ys, labels, colors):
-            ax.plot(x, y, "-^", markersize=4, color = color, label=label)
-
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel_left)
-
-        ax.grid()
-
-        ax.legend(
-            loc="upper center",
-            bbox_to_anchor=legend_loc,
-            ncol=nc,
-            fontsize=12,
-            edgecolor="black",
-            fancybox=False
-        )
-
-        plt.savefig(cls.add_folder(path), bbox_inches="tight")
-
 
 schwarz_diamond = gyroid.SchwarzDiamond().make_function()
 
@@ -214,24 +161,14 @@ if __name__ == "__main__":
 
     if rank == 0:
 
-        x = [np.arange(1, basis_size + 1)] * len(ns)
-        y = all_errors
-        
-        labels = ["$N_c=1$", "$N_c=16$"]
+        x = np.array([np.arange(1, basis_size + 1)] * len(ns))
+        y = np.array(all_errors)
 
-        data = {
-            "x": x,
-            "y": y,
-            "label": labels
-        }
+        file_path = os.path.join(folder, f"error_data.h5")
 
-        Plots.plot_1(
-            (5, 4),
-            data,
-            "basis_error.pdf",
-            "rom",
-            "Snapshot Error vs. Basis Size",
-            f"$N_b$",
-            f"$\|A-\hat{{A}}\|$"
-        )
+        with h5py.File(file_path, "w") as f:
+            f.create_dataset("basis_number", data=x)
+            f.create_dataset("errors", data=y)
+
+        print(f"Saved to {file_path}")
         
