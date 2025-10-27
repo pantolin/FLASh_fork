@@ -789,7 +789,7 @@ class GlobalDofsManager:
 
         error = np.sqrt(self.communicators.global_comm.allreduce(error_local, op=MPI.SUM))
         norm = np.sqrt(self.communicators.global_comm.allreduce(norm_local, op=MPI.SUM))
-
+        
         return error/norm
 
     def plot_solution(self, us) -> None:

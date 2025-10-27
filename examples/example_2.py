@@ -2,11 +2,6 @@ import numpy as np
 
 from FLASh.utils import Communicators
 
-from qugar import impl
-from mpi4py import MPI
-
-from qugar.cpp import create_affine_transformation
-
 from FLASh.mesh import (
     GlobalDofsManager,
     SplineGeometry,
@@ -18,13 +13,6 @@ from FLASh.pde import (
     AMG,
     Cholesky
 )
-
-from dataclasses import dataclass, field
-from typing import Callable, Optional, Tuple, List
-from scipy.stats.qmc import Sobol
-
-import matplotlib.pyplot as plt
-import os
 
 dtype = np.float64
 
@@ -55,7 +43,7 @@ if __name__ == "__main__":
     communicators = Communicators()
 
     def parameter_function(X):
-        return -2.7 + 6.3 * np.exp(-13 * X[1]) + 6.3 * np.exp(13 * (X[1]-1))
+        return  np.exp(-13 * X[1]) + np.exp(13 * (X[1]-1))
 
     def source(X):
         return (0.0+0.0*X[0], 0.0+0*X[0])
@@ -105,11 +93,11 @@ if __name__ == "__main__":
     }
 
     opts = {
-        "make_plots": True,
         "global_dofs_manager_opts": gdm_opts
     }
 
-    n = [10, 2]
+    i = 3
+    n = [15*i, 2*i]
 
     knots_x = [P0[0]]*degree + list(np.linspace(P0[0],P1[0],n[0]+1)) + [P1[0]]*degree
     knots_y = [P0[1]]*degree + list(np.linspace(P0[1],P1[1],n[1]+1)) + [P1[1]]*degree
@@ -123,7 +111,7 @@ if __name__ == "__main__":
     geometry = SplineGeometry.interpolate_map(
         [knots_x, knots_y],
         map,
-        gyroid.SchoenIWP().make_function(),
+        gyroid.SchwarzDiamond().make_function(),
         geometry_opts
     )
 
@@ -136,11 +124,11 @@ if __name__ == "__main__":
 
     # communicators.global_comm.Barrier()
 
-    # GlobalDofsManager.plot(geometry, communicators)
-    solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
-    solver.setup()
-    solver.solve()
-    solver.plot_solution()
+    GlobalDofsManager.plot(geometry, communicators)
+    # solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
+    # solver.setup()
+    # solver.solve()
+    # solver.plot_solution()
 
     
 

@@ -2,11 +2,6 @@ import numpy as np
 
 from FLASh.utils import Communicators
 
-from qugar import impl
-from mpi4py import MPI
-
-from qugar.cpp import create_affine_transformation
-
 from FLASh.mesh import (
     GlobalDofsManager,
     SplineGeometry,
@@ -19,13 +14,6 @@ from FLASh.pde import (
     Cholesky
 )
 
-from dataclasses import dataclass, field
-from typing import Callable, Optional, Tuple, List
-from scipy.stats.qmc import Sobol
-
-import matplotlib.pyplot as plt
-import os
-
 dtype = np.float64
 
 def bc_1(X):
@@ -34,23 +22,10 @@ def bc_1(X):
 def bc_2(X):
     return (0.0+0.0*X[0], 0+0*X[0])
 
-# def map(x, y, r = [0.5, 1.0], theta = [0, 1]):
-
-#     tx = r[0] + (r[1]-r[0])*x
-#     ty = theta[0] + (theta[1]-theta[0])*y
-
-#     return np.stack([tx*np.cos(np.pi*ty), tx*np.sin(np.pi*ty), 0*tx], axis=-1)
-
 def map(x, y):
 
     return np.stack([x, y, 0*x], axis=-1)
 
-# def map(x, y):
-
-#     tx = -1 + 2*x
-#     ty = -1 + 2*y
-
-#     return np.stack([tx, ty*(np.abs(np.cos(np.pi*tx))+0.8), 0*tx], axis = -1)
 
 if __name__ == "__main__":        
 
@@ -65,7 +40,7 @@ if __name__ == "__main__":
     communicators = Communicators()
 
     def parameter_function(X):
-        return 0.4 + 0*X[0]
+        return 3 - 0*X[0]
 
     def source(X):
         return (0.0+0.0*X[0], 0.0+0*X[0])
@@ -127,24 +102,17 @@ if __name__ == "__main__":
     geometry = SplineGeometry.interpolate_map(
         [knots_x, knots_y],
         map,
-        gyroid.SchwarzDiamond().make_function(),
+        gyroid.SchoenIWP().make_function(),
         geometry_opts
     )
 
     geometry.coarse_mesh.set_parameter_field_from_function(parameter_function)
 
-    # if communicators.global_comm.Get_rank() == 0:
-    #     geometry.plot()
-    #     geometry.plot_det()
-    #     geometry.plot_arclen()
-
-    # communicators.global_comm.Barrier()
-
     GlobalDofsManager.plot(geometry, communicators)
-    solver = Cholesky(geometry, elasticity_pde, communicators, opts = opts)
-    solver.setup()
-    solver.solve()
-    solver.plot_solution()
+    # solver = Cholesky(geometry, elasticity_pde, communicators, opts = opts)
+    # solver.setup()
+    # solver.solve()
+    # solver.plot_solution()
 
     
 

@@ -346,6 +346,10 @@ class Assembler:
         Sc_petsc.assemblyBegin()
         Sc_petsc.assemblyEnd()
 
+        #### Set up coarse solver ####
+
+        # DIRECT SOLVER
+
         ksp = PETSc.KSP().create()
         ksp.setOperators(Sc_petsc)
         ksp.setType('preonly')
@@ -355,6 +359,8 @@ class Assembler:
         pc.setFactorSolverType('mumps')
 
         ksp.setUp()
+
+        # AMG SOLVER
 
         # ksp = PETSc.KSP().create()
         # ksp.setOperators(Sc_petsc)
@@ -839,7 +845,7 @@ class BDDC(BaseSolver):
 
         self.stats["solve time"] = solve_time
         self.stats["total time"] = self.stats["setup time"] + self.stats["assemble time"] + solve_time
-        self.stats["local iterations"] = sum(tracker.niter for tracker in self.assembler.internal_tracker) / len(self.assembler.internal_tracker),
+        self.stats["iterations"] = sum(tracker.niter for tracker in self.assembler.internal_tracker) / len(self.assembler.internal_tracker),
         
         if rank == 0 and self.opts.get("print_stats", True):
 

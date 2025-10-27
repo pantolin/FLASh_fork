@@ -17,6 +17,11 @@ from FLASh.pde import (
     AMG,
     Cholesky
 )
+
+from FLASh.rom import (
+    MDEIM
+)
+
 import os
 
 from scipy.io import loadmat
@@ -29,7 +34,33 @@ def h_bc(X):
 def source(X):
     return (0+0*X[0], -0.01+0*X[0])
 
-if __name__ == "__main__":            
+if __name__ == "__main__":      
+
+
+    ### Load ROM models ###
+    
+    epsilon_min = -2.5
+    epsilon_max = 3.0
+
+    n_rom = 2
+    p_rom = 6
+    d_rom = 4
+
+    p0 = np.array([epsilon_min] * d_rom)
+    p1 = np.array([epsilon_max] * d_rom)
+
+    k_core_model = MDEIM(n_rom, p_rom, p0, p1)
+    k_core_model.set_up_from_files("K_core", "schoen_iwp_4")
+
+    m_core_model = MDEIM(n_rom, p_rom, p0, p1)
+    m_core_model.set_up_from_files("M_core", "schoen_iwp_4")
+
+    bm_core_model = MDEIM(n_rom, p_rom, p0, p1)
+    bm_core_model.set_up_from_files("bM_core", "schoen_iwp_4")
+
+    K_core_full = np.load("rom_data/schoen_iwp_4/K_core/full_array.npy")     
+
+    #### 
 
     data  = loadmat('examples/wing_example/WingForce.mat')
     coefs_f = data['coefs']
@@ -52,7 +83,7 @@ if __name__ == "__main__":
     geometry = SplineGeometry.create_spline(
         [knt1, knt2],
         coefs,
-        gyroid.SchoenIWP().make_function(),
+        gyroid.SchwarzDiamond().make_function(),
         geometry_opts
     )
 
@@ -63,17 +94,18 @@ if __name__ == "__main__":
         return 10e4 * np.einsum("ij,kj->ik", coefs_f, basis_vals) 
 
     def parameter_function(X):
-        return 6.3 * np.exp(-13 * X[1]) + 6.3 * np.exp(13 * (X[1]-1))
+        vals = -2.5 + 5.5 + np.exp(-13 * (X[1]-0.125)) + 5.5  * np.exp(13 * (X[1]-0.875))
+        return np.clip(vals, -2.5, 3)
     
     geometry.coarse_mesh.set_parameter_field_from_function(parameter_function)
 
-    # cells_ids = np.hstack(
-    #     [np.arange(0, 4000), np.arange(3200, 4000)]
-    # )
+    cells_ids = np.hstack(
+        [np.arange(0, 800), np.arange(3200, 4000)]
+    )
 
-    # values = [np.array([6.3] * 4)] * 1600
+    values = [np.array([3.0] * 4)] * 1600
 
-    # geometry.coarse_mesh.set_parameter_field_values(cells_ids, values)
+    geometry.coarse_mesh.set_parameter_field_values(cells_ids, values)
 
     # GlobalDofsManager.plot(geometry, communicators)
 
@@ -118,9 +150,10 @@ if __name__ == "__main__":
     )
 
     sbdmn_opts = {
-        "stabilize" : False,
+        "stabilize" : True,
         "stabilization": 1e-5,
-        "assemble" : True
+        "parametric_bc": True,
+        "assemble" : True,
     }
 
     gdm_opts = {
@@ -133,7 +166,8 @@ if __name__ == "__main__":
         "global_dofs_manager_opts": gdm_opts
     }
 
-    solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
+    # GlobalDofsManager.plot(geometry, communicators)
+    solver = Cholesky(geometry, elasticity_pde, communicators, opts = opts)
     solver.setup()
     solver.solve()
     solver.plot_solution()

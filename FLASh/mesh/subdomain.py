@@ -93,6 +93,7 @@ class Subdomain:
         self._stab_val = opts.get("stabilization", 1e-3)
         self._approx = opts.get("approximate_geometry", False)
         self._approx_degree = opts.get("approximate_geometry_degree", 2)
+        self._parametric_bc = opts.get("parametric_bc", False)
         
         self._create_lagrange_extraction()
         self._set_coordinates()
@@ -517,7 +518,13 @@ class Subdomain:
                     if marker(center):
 
                         b = np.zeros((n_b * 2))
-                        b[dofs] = (np.array(fun(self._x.T)).T).flatten()[dofs]
+                        if self._parametric_bc:
+                            x = self._x.copy()
+                            x[:,0] = self._p0[0] + (self._p1[0] - self._p0[0]) * x[:,0]
+                            x[:,1] = self._p0[1] + (self._p1[1] - self._p0[0]) * x[:,0]
+                            b[dofs] = (np.array(fun(x.T)).T).flatten()[dofs]
+                        else:
+                            b[dofs] = (np.array(fun(self._map.evaluate(self._x).T)).T).flatten()[dofs]
                         f += bM @ b
 
         self.K = K

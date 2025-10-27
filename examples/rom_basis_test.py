@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     total_points = samples_per_basis
 
-    all_errors = [np.zeros(basis_size)] * len(ns)
+    all_errors = [np.zeros(basis_size) for _ in range(len(ns))]
 
     for n, errors in zip(ns, all_errors):
 

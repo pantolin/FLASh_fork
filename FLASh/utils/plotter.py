@@ -76,7 +76,6 @@ class Plotter:
         )
         plt.savefig(cls.add_folder(path), bbox_inches="tight")
 
-
     @classmethod
     def get_subplot(
         cls,

@@ -43,10 +43,10 @@ class BaseSolver(ABC):
 
         self.gbl_dofs_mngr = gbl_dofs_mngr
 
-        self._setup_extra()
-
         setup_time = MPI.Wtime() - start_time
         self.stats["setup time"] = setup_time
+
+        self._setup_extra()
 
     @abstractmethod
     def _setup_extra(self):
