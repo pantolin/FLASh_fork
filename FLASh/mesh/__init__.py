@@ -16,6 +16,8 @@ from FLASh.mesh.global_mesh import (
     ParametricMesh
 )
 
+## Parametric mesh is no longer used and can be deleted 
+
 from FLASh.mesh import gyroid
 
 __all__ = [

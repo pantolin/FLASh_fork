@@ -97,21 +97,22 @@ if __name__ == "__main__":
         conn_edges_nodes,
         nodes,
         eleme_coefs,
-        gyroid.SchoenIWP().make_function(),
+        gyroid.SchwarzDiamond().make_function(),
         geometry_opts
     )
 
-    def parameter_function(X):
-        return -2.0 + 0.0 * X[0]
-    
     # def parameter_function(X):
-    #     num_points = X.shape[1]
-    #     random_vals = 0.1 + (0.9 - 0.1) * np.random.rand(num_points)
-    #     return random_vals
+    #     return -2.0 + 0.0 * X[0]
     
-    values = np.array([3.5] * nodes_ex.size)
+    def parameter_function(X):
+        num_points = X.shape[1]
+        random_vals = 0.1 + (0.9 - 0.1) * np.random.rand(num_points)
+        return random_vals
+    
+    # values = np.array([3.5] * nodes_ex.size)
 
-    geometry.coarse_mesh.set_custom_parameter_field(parameter_function, nodes_ex, values)
+    # geometry.coarse_mesh.set_custom_parameter_field(parameter_function, nodes_ex, values)
+    geometry.coarse_mesh.set_parameter_field_from_function(parameter_function)
 
     # GlobalDofsManager.plot(geometry, communicators)
 
@@ -171,7 +172,7 @@ if __name__ == "__main__":
     elasticity_pde = Elasticity(
         exterior_bc = exterior_bc,
         source = source,
-        E = 1,
+        E = 5,
         nu = 0.25
     )
 
@@ -203,31 +204,35 @@ if __name__ == "__main__":
     solver = BDDC(geometry, elasticity_pde_rom, communicators, opts = opts)
     solver.setup()
     solver.solve()
-    solver.plot_solution()
+    solver.write_solution()
 
-    rom_solution = solver.get_solution()
+    # solver.plot_solution()
 
-    sbdmn_opts = {
-        "stabilize" : False,
-        "assemble" : True
-    }
+    # rom_solution = solver.get_solution()
 
-    gdm_opts = {
-        "subdomain_opts" : sbdmn_opts
-    }
+    # sbdmn_opts = {
+    #     "stabilize" : False,
+    #     "assemble" : True
+    # }
 
-    opts = {
-        "global_dofs_manager_opts": gdm_opts
-    }
+    # gdm_opts = {
+    #     "subdomain_opts" : sbdmn_opts
+    # }
 
-    solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
-    solver.setup()
-    solver.solve()
-    solver.plot_solution()
+    # opts = {
+    #     "global_dofs_manager_opts": gdm_opts
+    # }
 
-    solution = solver.get_solution()
+    # solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
+    # solver.setup()
+    # solver.solve()
+    # solver.plot_solution()
+    # solver.write_solution()
 
-    print(solver.gbl_dofs_mngr.compute_error(rom_solution, solution))
+    # solution = solver.get_solution()
+
+    # if communicators.global_comm.Get_rank() == 0:
+    #     print("Solution error: ", solver.gbl_dofs_mngr.compute_error(rom_solution, solution))
 
     
 

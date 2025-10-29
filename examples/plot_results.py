@@ -365,12 +365,12 @@ def plot_rom_basis_test():
 
 if __name__ == "__main__":
 
-    # plot_test_1()
-    # plot_test_2()
-    # plot_test_3()
-    # plot_test_4()
-    # plot_test_5()
-    # plot_test_6()
+    plot_test_1()
+    plot_test_2()
+    plot_test_3()
+    plot_test_4()
+    plot_test_5()
+    plot_test_6()
 
     plot_rom_basis_test()
 

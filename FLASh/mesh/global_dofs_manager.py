@@ -392,6 +392,8 @@ class GlobalDofsManager:
         vdd_subdomain = np.array(vdd_subdomain, dtype=np.int32)
         vdd_local_index = np.array(vdd_local_index, dtype=np.int32)
 
+        # I think that it is no longer necessary to find unique ones because they are unique by construction
+
         vertices_dirichlet_dofs, idx = np.unique(vertices_dirichlet_dofs, return_index=True)
         vdd_tag = vdd_tag[idx]
         vdd_subdomain = vdd_subdomain[idx]
@@ -408,7 +410,7 @@ class GlobalDofsManager:
         vdd_local_index = vdd_local_index[i_idx]
 
         self._vertices_dirichlet_dofs = vertices_dirichlet_dofs
-        self._vertices_dirichlet_dofs_tagss = vdd_tag
+        self._vertices_dirichlet_dofs_tags = vdd_tag
 
         ####
 
@@ -655,9 +657,7 @@ class GlobalDofsManager:
 
         local_vertices, local_edges = subdomain.get_boundary_ranges()
 
-        rows = []
         cols = []
-        values = []
 
         for vertex, local_vertex in zip(vertices, local_vertices):
             if local_vertex.size > 0:

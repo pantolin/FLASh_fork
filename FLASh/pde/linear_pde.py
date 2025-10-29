@@ -144,24 +144,20 @@ class Elasticity:
         E: float = 2.5,
         nu: float = 0.25,
         dim: int = 2,
-        interior_bc: list[tuple] = [],
         exterior_bc: list[tuple] = [],
         source: Callable = zero_function,
-        u: list[Expr] | None = None,
         K_model = None,
         M_model = None,
         bM_model = None,
-        K_full_core = None
+        K_full_core: np.ndarray = None
     ) -> None:
         
         self.E = E
         self.nu = nu
         self.dim = dim
 
-        self.interior_bc = interior_bc
         self.exterior_bc = exterior_bc
         self.source = source
-        self.u = u
 
         self.mu = E/(2*(1+nu))
         self.lambda_ = (E*nu)/((1+nu)*(1-2*nu))

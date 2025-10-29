@@ -229,6 +229,9 @@ class Subdomain:
 
     def create_edge_centers(self) -> None:
 
+        ## This needs to be changed for cells which are not cartesian rectangles in the 
+        # parametric mesh, but is only used for neumann bc.
+
         v0 = self._p0
         v1 = np.array([self._p1[0], self._p0[1]])
         v2 = np.array([self._p0[0], self._p1[1]])
@@ -256,6 +259,8 @@ class Subdomain:
 
             x = self._map.evaluate(center[None,:])[0]
             self._edge_centers.append(x)
+
+        ##### This is used for other things.
 
         self._e_2_v = [
             np.array([0, 1], dtype = np.int32),
@@ -471,6 +476,8 @@ class Subdomain:
 
             K = self.assemble_K()
 
+        # The mass is only used to computing errors and it is not necesarry to solve the problem
+        
         if self._linear_pde.M_model:
 
             self.element.fit(self._map.evaluate_jacobian_determinant)

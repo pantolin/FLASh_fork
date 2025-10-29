@@ -79,4 +79,4 @@ class BaseSolver(ABC):
         if self.solution is None:
             raise ValueError("No solution available. Please run the solver first.")
         
-        write_solutions(self.get_solution())
+        write_solutions(self.get_solution(), self.gbl_dofs_mngr)

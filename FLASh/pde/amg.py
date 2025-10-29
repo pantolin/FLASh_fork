@@ -253,13 +253,6 @@ class Assembler:
         # ILU (incomplete LU, usually for sequential runs)
         # pc.setType('ilu')
 
-        # If running in parallel with MPI, use block Jacobi + ILU
-        # pc.setType('bjacobi')
-        # subksps = pc.getFieldSplitSubKSP()
-        # # Returns a list of (possibly one) KSPs, each with its own PC
-        # for ksp in subksps:
-        #     subpc = ksp.getPC()
-
         # AMG
         # pc.setType('gamg')  
 

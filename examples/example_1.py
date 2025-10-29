@@ -7,6 +7,7 @@ from FLASh.mesh import (
     SplineGeometry,
     gyroid
 )
+
 from FLASh.pde import (
     Elasticity,
     BDDC,
@@ -30,17 +31,18 @@ def map(x, y):
 if __name__ == "__main__":        
 
     P0 = np.array([0.0, 0.0])
-    P1 = np.array([3.0, 3.0])
+    P1 = np.array([1.0, 1.0])
 
-    degree = 8
+    # degree = 8
 
-    epsilon_min = 0.5
-    epsilon_max = 0.5
+    # epsilon_min = 0.1
+    # epsilon_max = 0.9
 
     communicators = Communicators()
 
     def parameter_function(X):
-        return 3 - 0*X[0]
+        val = 3 - 6*X[0]
+        return np.clip(val, -2.5, 2.5)
 
     def source(X):
         return (0.0+0.0*X[0], 0.0+0*X[0])
@@ -52,9 +54,9 @@ if __name__ == "__main__":
 
     exterior_bc = [
         (
-            0, 
+            0, # Dirichlet or Neumman bc. 0: Dirichlet, 1: Neumman
             bc_1, 
-            lambda x: np.isclose(x[0], P0[0]), 
+            lambda x: np.isclose(x[0], P0[0]), # Condition to locate boundary dofs
             0
         ),
         (
@@ -74,28 +76,28 @@ if __name__ == "__main__":
 
     sbdmn_opts = {
         "stabilize" : False,
-        "stabilization": 1e-5,
+        "stabilization": 1e-5, 
         "assemble" : True
     }
 
     gdm_opts = {
-        "periodic_mesh": True,
         "subdomain_opts" : sbdmn_opts
     }
 
     opts = {
-        "make_plots": True,
         "global_dofs_manager_opts": gdm_opts
     }
 
     n = [3, 3]
 
-    knots_x = [P0[0]]*degree + list(np.linspace(P0[0],P1[0],n[0]+1)) + [P1[0]]*degree
-    knots_y = [P0[1]]*degree + list(np.linspace(P0[1],P1[1],n[1]+1)) + [P1[1]]*degree
+    spline_degree = 2
+
+    knots_x = [P0[0]]*spline_degree + list(np.linspace(P0[0],P1[0],n[0]+1)) + [P1[0]]*spline_degree
+    knots_y = [P0[1]]*spline_degree + list(np.linspace(P0[1],P1[1],n[1]+1)) + [P1[1]]*spline_degree
 
     geometry_opts = {
         "basis_degree": 8,
-        "spline_degree": 8,
+        "spline_degree": spline_degree,
         "periodic": False
     }
 
@@ -108,11 +110,12 @@ if __name__ == "__main__":
 
     geometry.coarse_mesh.set_parameter_field_from_function(parameter_function)
 
-    GlobalDofsManager.plot(geometry, communicators)
-    # solver = Cholesky(geometry, elasticity_pde, communicators, opts = opts)
-    # solver.setup()
-    # solver.solve()
-    # solver.plot_solution()
+    # GlobalDofsManager.plot(geometry, communicators)
+
+    solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
+    solver.setup()
+    solver.solve()
+    solver.plot_solution()
 
     
 

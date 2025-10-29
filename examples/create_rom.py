@@ -17,11 +17,11 @@ if __name__ == "__main__":
         n = 1, 
         p = 2, 
         d = 4, 
-        samples_per_basis = 100,
+        samples_per_basis = 15,
         batch_size = 100,
-        basis_size = 40,
-        basis_oversample = 10,
-        directory = "rom_data"
+        basis_size = 7,
+        basis_oversample = 3,
+        directory = "rom_data_paco"
     )
 
     # full_K_core = generate_snapshots(

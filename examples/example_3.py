@@ -39,8 +39,8 @@ if __name__ == "__main__":
 
     ### Load ROM models ###
     
-    epsilon_min = -2.5
-    epsilon_max = 3.0
+    epsilon_min = 0.1
+    epsilon_max = 0.9
 
     n_rom = 2
     p_rom = 6
@@ -50,15 +50,15 @@ if __name__ == "__main__":
     p1 = np.array([epsilon_max] * d_rom)
 
     k_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    k_core_model.set_up_from_files("K_core", "schoen_iwp_4")
+    k_core_model.set_up_from_files("K_core", "schwarz_diamond_3")
 
     m_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    m_core_model.set_up_from_files("M_core", "schoen_iwp_4")
+    m_core_model.set_up_from_files("M_core", "schwarz_diamond_3")
 
     bm_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    bm_core_model.set_up_from_files("bM_core", "schoen_iwp_4")
+    bm_core_model.set_up_from_files("bM_core", "schwarz_diamond_3")
 
-    K_core_full = np.load("rom_data/schoen_iwp_4/K_core/full_array.npy")     
+    K_core_full = np.load("rom_data/schwarz_diamond_3/K_core/full_array.npy")     
 
     #### 
 
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     geometry = SplineGeometry.create_spline(
         [knt1, knt2],
         coefs,
-        gyroid.SchwarzDiamond().make_function(),
+        gyroid.SchoenIWP().make_function(),
         geometry_opts
     )
 
@@ -93,19 +93,23 @@ if __name__ == "__main__":
         basis_vals = basis_f.evaluate(X[0])
         return 10e4 * np.einsum("ij,kj->ik", coefs_f, basis_vals) 
 
+    # def parameter_function(X):
+    #     vals = -2.5 + 5.5 + np.exp(-13 * (X[1]-0.125)) + 5.5  * np.exp(13 * (X[1]-0.875))
+    #     return np.clip(vals, -2.5, 3)
+
     def parameter_function(X):
-        vals = -2.5 + 5.5 + np.exp(-13 * (X[1]-0.125)) + 5.5  * np.exp(13 * (X[1]-0.875))
-        return np.clip(vals, -2.5, 3)
+        vals = 0.3 + 0.6 + np.exp(-13 * (X[1]-0.125)) + 0.6  * np.exp(13 * (X[1]-0.875))
+        return np.clip(vals, 0.1, 0.9)
     
     geometry.coarse_mesh.set_parameter_field_from_function(parameter_function)
 
-    cells_ids = np.hstack(
-        [np.arange(0, 800), np.arange(3200, 4000)]
-    )
+    # cells_ids = np.hstack(
+    #     [np.arange(0, 800), np.arange(3200, 4000)]
+    # )
 
-    values = [np.array([3.0] * 4)] * 1600
+    # values = [np.array([3.0] * 4)] * 1600
 
-    geometry.coarse_mesh.set_parameter_field_values(cells_ids, values)
+    # geometry.coarse_mesh.set_parameter_field_values(cells_ids, values)
 
     # GlobalDofsManager.plot(geometry, communicators)
 
@@ -146,12 +150,16 @@ if __name__ == "__main__":
         exterior_bc = exterior_bc,
         source = source,
         E = 70 * 1e9,
-        nu = 0.3
+        nu = 0.3,
+        K_model = k_core_model,
+        M_model = m_core_model,
+        bM_model = bm_core_model,
+        K_full_core = K_core_full
     )
 
     sbdmn_opts = {
         "stabilize" : True,
-        "stabilization": 1e-5,
+        "stabilization": 1e-3,
         "parametric_bc": True,
         "assemble" : True,
     }
@@ -167,7 +175,7 @@ if __name__ == "__main__":
     }
 
     # GlobalDofsManager.plot(geometry, communicators)
-    solver = Cholesky(geometry, elasticity_pde, communicators, opts = opts)
+    solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
     solver.setup()
     solver.solve()
     solver.plot_solution()
