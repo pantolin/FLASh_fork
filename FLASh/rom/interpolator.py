@@ -162,18 +162,18 @@ class MDEIM:
 
     def evaluate(self, x):
 
-        id = int(self.locate_point(x))
+        id = int(self.locate_point(x)[0])
 
         return  self._basis[id] @ self._interpolators[id].evaluate(x).T
     
-    def set_up_from_files(self, operator_name, geometry_name):
+    def set_up_from_files(self, path):
 
         basis = []
         weights = []
 
         for i in range(self._n ** self._d):
 
-            file_path = os.path.join("rom_data", geometry_name, operator_name, f"data_{i}.h5")
+            file_path = os.path.join(path, f"data_{i}.h5")
 
             with h5py.File(file_path, "r") as f:
                 basis.append(f["basis"][:])

@@ -16,8 +16,9 @@ from FLASh.pde import (
     Cholesky
 )
 
-import os
 import h5py
+
+from _paths import RESULTS_DIR
 
 dtype = np.float64
 
@@ -131,9 +132,11 @@ if __name__ == "__main__":
 
         ### Solve baseline problem with direct solver ###
 
+        GlobalDofsManager.plot(geometry, communicators)
         solver = Cholesky(geometry, elasticity_pde, communicators, opts = opts)
         solver.setup()
         solver.solve()
+        solver.plot_solution()
 
         cholesky_stats.append(solver.get_stats())
 
@@ -169,10 +172,10 @@ if __name__ == "__main__":
 
         number_of_subdomains = 8 * (np.arange(1, i_max) ** 2)
 
-        folder = os.path.join("results", "test_1")
-        os.makedirs(folder, exist_ok=True)
+        folder = RESULTS_DIR / "test_1"
+        folder.mkdir(parents=True, exist_ok=True)
 
-        file_path = os.path.join(folder, f"data.h5")
+        file_path = folder / "data.h5"
 
         with h5py.File(file_path, "w") as f:
 

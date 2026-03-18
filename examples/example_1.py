@@ -71,11 +71,11 @@ if __name__ == "__main__":
         exterior_bc = exterior_bc,
         source = source,
         E = 5,
-        nu = 0.0
+        nu = 0.25
     )
 
     sbdmn_opts = {
-        "stabilize" : False,
+        "stabilize" : True,
         "stabilization": 1e-5, 
         "assemble" : True
     }
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     solver.setup()
     solver.solve()
     solver.plot_solution()
-
+    solver.plot_stress()
     
 
 

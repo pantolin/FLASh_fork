@@ -1,5 +1,6 @@
 import numpy as np
 import splipy as sp
+from pathlib import Path
  
 from FLASh.utils import Communicators
 
@@ -22,9 +23,10 @@ from FLASh.rom import (
     MDEIM
 )
 
-import os
-
 from scipy.io import loadmat
+
+# Paths
+from _paths import EXAMPLES_ROOT, ROM_DATA_DIR
 
 dtype = np.float64
 
@@ -35,7 +37,6 @@ def source(X):
     return (0+0*X[0], -0.01+0*X[0])
 
 if __name__ == "__main__":      
-
 
     ### Load ROM models ###
     
@@ -50,23 +51,23 @@ if __name__ == "__main__":
     p1 = np.array([epsilon_max] * d_rom)
 
     k_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    k_core_model.set_up_from_files("K_core", "schwarz_diamond_3")
+    k_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core"))
 
     m_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    m_core_model.set_up_from_files("M_core", "schwarz_diamond_3")
+    m_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "M_core"))
 
     bm_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    bm_core_model.set_up_from_files("bM_core", "schwarz_diamond_3")
+    bm_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "bM_core"))
 
-    K_core_full = np.load("rom_data/schwarz_diamond_3/K_core/full_array.npy")     
+    K_core_full = np.load(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core" / "full_array.npy"))
 
     #### 
 
-    data  = loadmat('examples/wing_example/WingForce.mat')
+    data  = loadmat(str(EXAMPLES_ROOT / "wing_example" / "WingForce.mat"))
     coefs_f = data['coefs']
     knt_f   = data['knt'].flatten()
 
-    data  = loadmat('examples/wing_example/WingSection.mat')
+    data  = loadmat(str(EXAMPLES_ROOT / "wing_example" / "WingSection.mat"))
     coefs = data['coefs'].transpose(1, 2, 0)
     coefs = np.concatenate([coefs, np.zeros((*coefs.shape[:2], 1))], axis=-1)
     knt1  = data['knt1'].flatten()

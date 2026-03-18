@@ -70,6 +70,13 @@ class BaseSolver(ABC):
         
         self.gbl_dofs_mngr.plot_solution(self.get_solution())
 
+    def plot_stress(self):
+
+        if self.solution is None:
+            raise ValueError("No solution available. Please run the solver first.")
+        
+        self.gbl_dofs_mngr.plot_stress(self.get_solution())
+
     def plot_f(self):
 
         self.gbl_dofs_mngr.plot_solution(self.gbl_dofs_mngr.get_fs())

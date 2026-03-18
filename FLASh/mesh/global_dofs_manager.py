@@ -21,6 +21,8 @@ from qugar.mesh import create_unfitted_impl_Cartesian_mesh
 from tqdm import tqdm
 
 import line_profiler
+from ufl import sym, grad, Identity, tr, sqrt, inner
+import dolfinx.fem.petsc
 
 
 type SparseMatrix = scipy.sparse._csr.csr_matrix
@@ -280,7 +282,7 @@ class GlobalDofsManager:
                                         f"{reference} vs {num_edges[cell, local_id]}")
             
             self._edges_dofs_ranges[edge_id, 0] = counter
-            counter += num_edges[cells[0], local_edge_id]
+            counter += num_edges[cells[0], local_edge_id].item()
             self._edges_dofs_ranges[edge_id, 1] = counter
 
     def _create_primal_dofs(self) -> None:
@@ -352,14 +354,14 @@ class GlobalDofsManager:
                                         f"{reference} vs {num_edge_primals[cell, local_id]}")
             
             self._edge_primal_ranges[edge_id, 0] = counter
-            counter += num_edge_primals[cells[0], local_edge_id]
+            counter += num_edge_primals[cells[0], local_edge_id].item()
             self._edge_primal_ranges[edge_id, 1] = counter     
 
             if num_edge_primals[cells[0], local_edge_id] > 0:
                 active_edges.append(edge_id)
 
         self._active_edges = np.array(active_edges)
-        self._total_primals = counter[0]
+        self._total_primals = counter
 
     def _create_dirichlet_boundary_conditions(self) -> None:
 
@@ -861,64 +863,97 @@ class GlobalDofsManager:
             pl.show_axes()
             pl.show()
 
-            # if dim == 2:
+    def plot_stress(self, us) -> None:
 
-            #     pl = pv.Plotter(shape=(1, 2))
+        s_inds = self.process_subdomains
+        us = self.transform_to_fenicsx(us)
+        us = self.communicators.global_comm.gather(us, root = 0)
+        s_inds = self.communicators.global_comm.gather(s_inds, root = 0)
 
-            #     for s_id, u in zip(s_inds, us):
+        if self.communicators.global_comm.Get_rank() == 0:
 
-            #         vertices = c_2_v.links(s_id)
+            us = list(chain.from_iterable(us))      
+            s_inds = list(chain.from_iterable(s_inds)) 
 
-            #         p0 = x[vertices[0]][:2]
-            #         p1 = x[vertices[3]][:2]
+            x = self.coarse_mesh.vertex_coordinates
+            c_2_v = self.coarse_mesh.cell_vertex_conn
 
-            #         comm = MPI.COMM_SELF
+            n = [1,1]
+            degree = self.geometry.basis_degree
+            dim = 2
+            levelset = self.geometry.levelset
 
-            #         impl_func = levelset(list(self.parameters[vertices]), p0, p1)
+            E = self.linear_pde.E
+            nu = self.linear_pde.nu
 
-            #         unf_mesh = create_unfitted_impl_Cartesian_mesh(
-            #             comm, impl_func, n, p0, p1, exclude_empty_cells=False
-            #         )
+            mu = E / (2.0 * (1.0 + nu))
+            lmbda = E * nu / ((1.0 + nu) * (1.0 - 2.0 * nu))
 
-            #         V = dolfinx.fem.functionspace(unf_mesh, ("Lagrange", degree, (dim,)))
-            #         uh = dolfinx.fem.Function(V)
-            #         uh.x.array[:] = u
+            def sigma(v):
+                return lmbda * tr(sym(grad(v))) * Identity(len(v)) + 2.0 * mu * sym(grad(v))
 
-            #         reparam_degree = 3
-            #         reparam = qugar.reparam.create_reparam_mesh(unf_mesh, degree=reparam_degree, levelset=False)
-            #         reparam_mesh = reparam.create_mesh()
+            def von_mises(v):
+                s = sigma(v) - (1./3) * tr(sigma(v)) * Identity(len(v))
+                return sqrt(3./2 * inner(s, s))
 
-            #         V_reparam = dolfinx.fem.functionspace(reparam_mesh, ("CG", reparam_degree, (dim,)))
-            #         uh_reparam = dolfinx.fem.Function(V_reparam)
+            pl = pv.Plotter(shape=(1, 1))
 
-            #         cmap = reparam_mesh.topology.index_map(reparam_mesh.topology.dim)
-            #         num_cells = cmap.size_local + cmap.num_ghosts
-            #         cells = np.arange(num_cells, dtype=np.int32)
+            for s_id, u in zip(s_inds, us):
 
-            #         interpolation_data = dolfinx.fem.create_interpolation_data(V_reparam, V, cells, padding=1.0e-14)
-            #         uh_reparam.interpolate_nonmatching(uh, cells, interpolation_data=interpolation_data)
+                vertices = c_2_v[s_id]
 
-            #         reparam_pv = qugar.plot.reparam_mesh_to_PyVista(reparam)
-            #         pv_mesh = reparam_pv.get("reparam")
+                bezier_element = self.geometry.get_bezier_element(s_id)
 
-            #         ux = uh_reparam.x.array[0::2]
-            #         uy = uh_reparam.x.array[1::2]
+                comm = MPI.COMM_SELF
 
-            #         pl.subplot(0, 0)
-            #         mesh_ux = pv_mesh.copy()
-            #         mesh_ux.point_data["ux"] = ux
-            #         mesh_ux.set_active_scalars("ux")
-            #         pl.add_mesh(mesh_ux, show_edges=False)
-            #         pl.show_axes()
+                impl_func = levelset(list(self.coarse_mesh.get_cell_parameters(s_id)), np.array([0.0,0.0]), np.array([1.0,1.0]))
 
-            #         pl.subplot(0, 1)
-            #         mesh_uy = pv_mesh.copy()
-            #         mesh_uy.point_data["uy"] = uy
-            #         mesh_uy.set_active_scalars("uy")
-            #         pl.add_mesh(mesh_uy, show_edges=False)
-            #         pl.show_axes()
+                unf_mesh = create_unfitted_impl_Cartesian_mesh(
+                    comm, impl_func, n, np.array([0.0,0.0]), np.array([1.0,1.0]), exclude_empty_cells=False
+                )
 
-            #     pl.link_views()
-            #     pl.show()
+                V = dolfinx.fem.functionspace(unf_mesh, ("Lagrange", degree, (dim,)))
+                uh = dolfinx.fem.Function(V)
+                uh.x.array[:] = u
 
+                W = dolfinx.fem.functionspace(unf_mesh, ("Lagrange", degree, (1, )))
+                von_mises_expr = dolfinx.fem.Expression(von_mises(uh), W.element.interpolation_points())
+                sh = dolfinx.fem.Function(W)
+                sh.interpolate(von_mises_expr)
 
+                reparam_degree = 3
+                reparam = qugar.reparam.create_reparam_mesh(unf_mesh, degree=reparam_degree, levelset=False)
+                reparam_mesh = reparam.create_mesh()
+
+                V_reparam = dolfinx.fem.functionspace(reparam_mesh, ("CG", reparam_degree, (dim,)))
+                uh_reparam = dolfinx.fem.Function(V_reparam)
+
+                W_reparam = dolfinx.fem.functionspace(reparam_mesh, ("CG", reparam_degree, (1, )))
+                sh_reparam = dolfinx.fem.Function(W_reparam)
+
+                cmap = reparam_mesh.topology.index_map(reparam_mesh.topology.dim)
+                num_cells = cmap.size_local + cmap.num_ghosts
+                cells = np.arange(num_cells, dtype=np.int32)
+
+                interpolation_data_u = dolfinx.fem.create_interpolation_data(V_reparam, V, cells, padding=1.0e-14)
+                uh_reparam.interpolate_nonmatching(uh, cells, interpolation_data=interpolation_data_u)
+
+                interpolation_data_s = dolfinx.fem.create_interpolation_data(W_reparam, W, cells, padding=1.0e-14)
+                sh_reparam.interpolate_nonmatching(sh, cells, interpolation_data=interpolation_data_s)
+
+                # PyVista conversion
+                reparam_pv = qugar.plot.reparam_mesh_to_PyVista(reparam)
+                pv_mesh = reparam_pv.get("reparam")
+                pv_mesh.points = bezier_element.evaluate(pv_mesh.points)
+
+                # Add both data sets to the same mesh object
+                u_plot = uh_reparam.x.array.reshape(-1, dim)
+                pv_mesh.point_data["displ_mag"] = np.linalg.norm(u_plot, axis=1)
+                pv_mesh.point_data["uh_vec"] = np.hstack((u_plot, np.zeros((u_plot.shape[0], 1))))
+                pv_mesh.point_data["von_mises"] = sh_reparam.x.array
+
+                pl.add_mesh(pv_mesh, scalars="von_mises", show_edges=False)
+
+            pl.view_xy()
+            pl.show_axes()
+            pl.show()

@@ -18,8 +18,10 @@ from FLASh.pde import (
 
 dtype = np.float64
 
-import os
 import h5py
+import os
+
+from _paths import RESULTS_DIR
 
 if __name__ == "__main__":         
 
@@ -189,10 +191,10 @@ if __name__ == "__main__":
         number_of_subdomains = 8 * (np.arange(1, i_max) ** 2)
         fa_degrees = np.array(fa_degrees)
 
-        folder = os.path.join("results", "test_6")
-        os.makedirs(folder, exist_ok=True)
+        folder = RESULTS_DIR / "test_6"
+        folder.mkdir(parents=True, exist_ok=True)
 
-        file_path = os.path.join(folder, f"data.h5")
+        file_path = folder / "data.h5"
 
         with h5py.File(file_path, "w") as f:
 

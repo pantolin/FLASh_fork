@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
+from pathlib import Path
 
-import os
 import h5py
 
 from mpi4py import MPI
@@ -20,6 +20,9 @@ from FLASh.mesh import (
 
 from itertools import product
 dtype = np.float64
+
+# Paths
+from _paths import ROM_DATA_DIR
 
 def bcast_array(array, comm):
     shape = comm.bcast(array.shape if comm.Get_rank() == 0 else None, root=0)
@@ -56,7 +59,7 @@ if __name__ == "__main__":
     batch_size = 100
     basis_size = 10
     basis_oversample = 5
-    directory = "rom_data"
+    directory = str(ROM_DATA_DIR)
 
     test_samples = 10
 
@@ -64,8 +67,8 @@ if __name__ == "__main__":
     rank = comm.Get_rank()
     size = comm.Get_size()
 
-    folder = os.path.join(directory, geometry_name, operator_name)
-    os.makedirs(folder, exist_ok=True)
+    folder = Path(directory) / geometry_name / operator_name
+    folder.mkdir(parents=True, exist_ok=True)
 
     total_points = samples_per_basis
 
@@ -164,7 +167,7 @@ if __name__ == "__main__":
         x = np.array([np.arange(1, basis_size + 1)] * len(ns))
         y = np.array(all_errors)
 
-        file_path = os.path.join(folder, f"error_data.h5")
+        file_path = folder / "error_data.h5"
 
         with h5py.File(file_path, "w") as f:
             f.create_dataset("basis_number", data=x)

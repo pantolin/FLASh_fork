@@ -1,4 +1,5 @@
 import numpy as np
+from pathlib import Path
 
 from FLASh.utils import Communicators
 
@@ -18,8 +19,9 @@ from FLASh.pde import (
 
 dtype = np.float64
 
-import os
 import h5py
+
+from _paths import RESULTS_DIR, ROM_DATA_DIR
 
 if __name__ == "__main__":         
 
@@ -38,15 +40,15 @@ if __name__ == "__main__":
     p1 = np.array([epsilon_max] * d_rom)
 
     k_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    k_core_model.set_up_from_files("K_core", "schwarz_diamond_3")
+    k_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core"))
 
     m_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    m_core_model.set_up_from_files("M_core", "schwarz_diamond_3")
+    m_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "M_core"))
 
     bm_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    bm_core_model.set_up_from_files("bM_core", "schwarz_diamond_3")
+    bm_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "bM_core"))
 
-    K_core_full = np.load("rom_data/schwarz_diamond_3/K_core/full_array.npy")
+    K_core_full = np.load(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core" / "full_array.npy"))
 
     ### Set geometry options ###
 
@@ -175,10 +177,10 @@ if __name__ == "__main__":
         assemble_time = np.array([stat["assemble time"] for stat in stats])
         solve_time = np.array([stat["solve time"] for stat in stats])
 
-        folder = os.path.join("results", "test_5")
-        os.makedirs(folder, exist_ok=True)
+        folder = RESULTS_DIR / "test_5"
+        folder.mkdir(parents=True, exist_ok=True)
 
-        file_path = os.path.join(folder, f"data.h5")
+        file_path = folder / "data.h5"
 
         with h5py.File(file_path, "w") as f:
 

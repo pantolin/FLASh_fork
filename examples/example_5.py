@@ -1,5 +1,6 @@
 import numpy as np
 import splipy as sp
+from pathlib import Path
  
 from FLASh.utils import Communicators
 
@@ -26,10 +27,13 @@ from example_5_utils import (
     WrenchGeometry
 )
 
-import os
-
 import dolfinx.fem
 import pyvista as pv
+
+# Paths
+EXAMPLES_DIR = Path(__file__).resolve().parent
+DATA_DIR = EXAMPLES_DIR / "data"
+ROM_DATA_DIR = DATA_DIR / "rom_data"
 
 from mpi4py import MPI
 import qugar
@@ -55,19 +59,19 @@ if __name__ == "__main__":
     p1 = np.array([epsilon_max] * d_rom)
 
     k_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    k_core_model.set_up_from_files("K_core", "schwarz_diamond_3")
+    k_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core"))
 
     m_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    m_core_model.set_up_from_files("M_core", "schwarz_diamond_3")
+    m_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "M_core"))
 
     bm_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    bm_core_model.set_up_from_files("bM_core", "schwarz_diamond_3")
+    bm_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "bM_core"))
 
-    K_core_full = np.load("rom_data/schwarz_diamond_3/K_core/full_array.npy")
+    K_core_full = np.load(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core" / "full_array.npy"))
 
     ##3    
 
-    data  = loadmat('examples/wrench_example/Wrench.mat')
+    data  = loadmat(str(EXAMPLES_DIR / "wrench_example" / "Wrench.mat"))
 
     nodes        = data['nodes']
     eleme_coefs  = data['eleme_coefs']
@@ -201,10 +205,12 @@ if __name__ == "__main__":
         "global_dofs_manager_opts": gdm_opts
     }
 
-    solver = BDDC(geometry, elasticity_pde_rom, communicators, opts = opts)
-    solver.setup()
-    solver.solve()
-    solver.write_solution()
+    GlobalDofsManager.plot(geometry, communicators)
+
+    # solver = BDDC(geometry, elasticity_pde_rom, communicators, opts = opts)
+    # solver.setup()
+    # solver.solve()
+    # # # solver.write_solution()
 
     # solver.plot_solution()
 

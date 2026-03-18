@@ -1,4 +1,5 @@
 import numpy as np
+from pathlib import Path
 
 from mpi4py import MPI  
 
@@ -20,6 +21,9 @@ from FLASh.rom import (
 )
 
 dtype = np.float64
+
+# Paths
+from _paths import ROM_DATA_DIR
 
 def map(x, y):
 
@@ -49,15 +53,15 @@ if __name__ == "__main__":
     p1 = np.array([epsilon_max] * d_rom)
 
     k_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    k_core_model.set_up_from_files("K_core", "schwarz_diamond_3")
+    k_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core"))
 
     m_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    m_core_model.set_up_from_files("M_core", "schwarz_diamond_3")
+    m_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "M_core"))
 
     bm_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    bm_core_model.set_up_from_files("bM_core", "schwarz_diamond_3")
+    bm_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "bM_core"))
 
-    K_core_full = np.load("rom_data/schwarz_diamond_3/K_core/full_array.npy")
+    K_core_full = np.load(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core" / "full_array.npy"))
 
     K_core = k_core_model.evaluate(np.ones((1,4)))
     M_core = m_core_model.evaluate(np.ones((1,4)))

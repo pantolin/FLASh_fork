@@ -1,15 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import os
-
-
 import h5py
+
+from _paths import FIGS_DIR, RESULTS_DIR, ROM_DATA_DIR
 
 # --- Plot results from test_1.py ---
 def plot_test_1():
 
-    file_path = "results/test_1/data.h5"
+    file_path = RESULTS_DIR / "test_1" / "data.h5"
     with h5py.File(file_path, "r") as f:
         bddc_iters = f["bddc_iters"][:]
         amg_iters = f["amg_iters"][:]
@@ -71,14 +70,14 @@ def plot_test_1():
 
     plt.tight_layout()
     plt.suptitle("Test 1: Solver Performance vs Subdomains", y=1.04)
-    os.makedirs("figs", exist_ok=True)
-    plt.savefig("figs/test_1_results.pdf", bbox_inches='tight')
+    FIGS_DIR.mkdir(exist_ok=True, parents=True)
+    plt.savefig(str(FIGS_DIR / "test_1_results.pdf"), bbox_inches='tight')
     plt.close()
 
 # --- Plot results from test_2.py ---
 def plot_test_2():
 	
-    file_path = "results/test_2/data.h5"
+    file_path = RESULTS_DIR / "test_2" / "data.h5"
     with h5py.File(file_path, "r") as f:
         iterations = f["iterations"][:]
         rom_iterations = f["rom_iterations"][:]
@@ -137,13 +136,13 @@ def plot_test_2():
 
     plt.tight_layout()
     plt.suptitle("Test 2: Error and Iteration Analysis (lines: stabilization values)", y=1.04)
-    os.makedirs("figs", exist_ok=True)
-    plt.savefig("figs/test_2_results.pdf", bbox_inches='tight')
+    FIGS_DIR.mkdir(exist_ok=True, parents=True)
+    plt.savefig(str(FIGS_DIR / "test_2_results.pdf"), bbox_inches='tight')
     plt.close()
 	
 # --- Plot results from test_3.py ---
 def plot_test_3():
-    file_path = "results/test_3/data.h5"
+    file_path = RESULTS_DIR / "test_3" / "data.h5"
     with h5py.File(file_path, "r") as f:
         number_of_subdomains = f["number_of_subdomains"][:]
         errors_bas_vs_basws = f["errors_bas_vs_basws"][:]
@@ -189,13 +188,13 @@ def plot_test_3():
 
     plt.tight_layout()
     plt.suptitle("Test 3: Error Analysis", y=1.04)
-    os.makedirs("figs", exist_ok=True)
-    plt.savefig("figs/test_3_results.pdf", bbox_inches='tight')
+    FIGS_DIR.mkdir(exist_ok=True, parents=True)
+    plt.savefig(str(FIGS_DIR / "test_3_results.pdf"), bbox_inches='tight')
     plt.close()
 
 # --- Plot results from test_4.py ---
 def plot_test_4():
-    file_path = "results/test_4/data.h5"
+    file_path = RESULTS_DIR / "test_4" / "data.h5"
     with h5py.File(file_path, "r") as f:
         number_of_subdomains = f["number_of_subdomains"][:]
         errors_bas_vs_basws = f["errors_bas_vs_basws"][:]
@@ -258,13 +257,13 @@ def plot_test_4():
 
     plt.tight_layout()
     plt.suptitle("Test 4: Error, Iteration, and Solve Time Analysis", y=1.04)
-    os.makedirs("figs", exist_ok=True)
-    plt.savefig("figs/test_4_results.pdf", bbox_inches='tight')
+    FIGS_DIR.mkdir(exist_ok=True, parents=True)
+    plt.savefig(str(FIGS_DIR / "test_4_results.pdf"), bbox_inches='tight')
     plt.close()
 
 # --- Plot results from test_5.py ---
 def plot_test_5():
-    file_path = "results/test_5/data.h5"
+    file_path = RESULTS_DIR / "test_5" / "data.h5"
     with h5py.File(file_path, "r") as f:
         number_of_subdomains = f["number_of_subdomains"][:]
         iters = f["iters"][:]
@@ -296,13 +295,13 @@ def plot_test_5():
 
     plt.tight_layout()
     plt.suptitle("Test 5: Iteration and Timing Analysis", y=1.04)
-    os.makedirs("figs", exist_ok=True)
-    plt.savefig("figs/test_5_results.pdf", bbox_inches='tight')
+    FIGS_DIR.mkdir(exist_ok=True, parents=True)
+    plt.savefig(str(FIGS_DIR / "test_5_results.pdf"), bbox_inches='tight')
     plt.close()
 
 # --- Plot results from test_6.py ---
 def plot_test_6():
-    file_path = "results/test_6/data.h5"
+    file_path = RESULTS_DIR / "test_6" / "data.h5"
     with h5py.File(file_path, "r") as f:
         number_of_subdomains = f["number_of_subdomains"][:]
         fa_degrees = f["fa_degrees"][:]
@@ -334,43 +333,84 @@ def plot_test_6():
 
     plt.tight_layout()
     plt.suptitle("Test 6: Error and Iteration Analysis", y=1.04)
-    os.makedirs("figs", exist_ok=True)
-    plt.savefig("figs/test_6_results.pdf", bbox_inches='tight')
+    FIGS_DIR.mkdir(exist_ok=True, parents=True)
+    plt.savefig(str(FIGS_DIR / "test_6_results.pdf"), bbox_inches='tight')
     plt.close()
 
 # --- Plot results from rom_basis_test.py ---
 def plot_rom_basis_test():
     """
-    Plot the error decay as a function of basis size for each n in the ROM basis test.
+    Plot the error decay as a function of basis size for each n in the ROM basis test
+    for both schoen_iwp_3 (parameter space ℙ¹) and schoen_iwp_4 (parameter space ℙ²).
     """
     import os
-    file_path = os.path.join("results", "rom_data", "schoen_iwp_4", "error_data.h5")
-    with h5py.File(file_path, "r") as f:
-        basis_number = f["basis_number"][:]
-        errors = f["errors"][:]
+
+    paths = {
+        "ℙ¹ (Schwarz Diamond)": ROM_DATA_DIR / "schwarz_diamond_3" / "K_core" / "error_data.h5",
+        "ℙ² (Schwarz Diamond)": ROM_DATA_DIR / "schwarz_diamond_4" / "K_core" / "error_data.h5",
+    }
 
     fig, ax = plt.subplots(figsize=(8, 6))
-    for i in range(errors.shape[0]):
-        ax.plot(basis_number[i], errors[i], label=f"n={i+1}")
+    for label, file_path in paths.items():
+        with h5py.File(file_path, "r") as f:
+            basis_number = f["basis_number"][:]
+            errors = f["errors"][:]
+
+        for i in range(errors.shape[0]):
+            ax.plot(
+                basis_number[i],
+                errors[i],
+                label=f"{label}, n={i+1}",
+            )
+
     ax.set_xlabel("Basis size")
-    ax.set_ylabel("Relative error (mean, $L^\infty$)")
-    ax.set_yscale('log')
+    ax.set_ylabel("Relative error (mean, $L^\\infty$)")
+    ax.set_yscale("log")
     ax.set_title("ROM Basis Test: Error Decay vs Basis Size")
     ax.grid(True)
     ax.legend()
     plt.tight_layout()
-    os.makedirs("figs", exist_ok=True)
-    plt.savefig("figs/rom_basis_test_results.pdf", bbox_inches='tight')
+    FIGS_DIR.mkdir(exist_ok=True, parents=True)
+    plt.savefig(str(FIGS_DIR / "rom_basis_test_results.pdf"), bbox_inches="tight")
+    plt.close()
+
+    paths = {
+        "ℙ¹ (Schoen IWP": ROM_DATA_DIR / "schoen_iwp_3" / "K_core" / "error_data.h5",
+        "ℙ² (Schoen IWP)": ROM_DATA_DIR / "schoen_iwp_4" / "K_core" / "error_data.h5",
+    }
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for label, file_path in paths.items():
+        with h5py.File(file_path, "r") as f:
+            basis_number = f["basis_number"][:]
+            errors = f["errors"][:]
+
+        for i in range(errors.shape[0]):
+            ax.plot(
+                basis_number[i],
+                errors[i],
+                label=f"{label}, n={i+1}",
+            )
+
+    ax.set_xlabel("Basis size")
+    ax.set_ylabel("Relative error (mean, $L^\\infty$)")
+    ax.set_yscale("log")
+    ax.set_title("ROM Basis Test: Error Decay vs Basis Size")
+    ax.grid(True)
+    ax.legend()
+    plt.tight_layout()
+    FIGS_DIR.mkdir(exist_ok=True, parents=True)
+    plt.savefig(str(FIGS_DIR / "rom_basis_test_results_iwp.pdf"), bbox_inches="tight")
     plt.close()
 
 if __name__ == "__main__":
 
-    plot_test_1()
-    plot_test_2()
-    plot_test_3()
-    plot_test_4()
-    plot_test_5()
-    plot_test_6()
+    # plot_test_1()
+    # plot_test_2()
+    # plot_test_3()
+    # plot_test_4()
+    # plot_test_5()
+    # plot_test_6()
 
     plot_rom_basis_test()
 

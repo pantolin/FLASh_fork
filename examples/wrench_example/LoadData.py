@@ -1,8 +1,9 @@
+from pathlib import Path
 from scipy.io import loadmat
 
+EXAMPLES_DIR = Path(__file__).resolve().parent.parent
 
-
-data  = loadmat('examples/wrench_example/Wrench.mat')
+data  = loadmat(str(EXAMPLES_DIR / "wrench_example" / "Wrench.mat"))
 
 
 

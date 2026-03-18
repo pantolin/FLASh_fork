@@ -1,10 +1,14 @@
 import numpy as np
+from pathlib import Path
 
 from FLASh.mesh import gyroid
 from FLASh.rom import (
     generate_snapshots,
     generate_rom_model
 )
+
+# Paths
+from _paths import ROM_DATA_DIR
 
 if __name__ == "__main__":
     
@@ -21,7 +25,7 @@ if __name__ == "__main__":
         batch_size = 100,
         basis_size = 7,
         basis_oversample = 3,
-        directory = "rom_data_paco"
+        directory = str(ROM_DATA_DIR)
     )
 
     # full_K_core = generate_snapshots(
@@ -30,7 +34,7 @@ if __name__ == "__main__":
     #     get_full_K_core = True
     # )
 
-    # np.save("rom_data/schoen_iwp_2/K_core/full_array.npy", full_K_core)
+    # np.save(str(ROM_DATA_DIR / "schoen_iwp_2" / "K_core" / "full_array.npy"), full_K_core)
 
     # generate_rom_model(
     #     "M_core", 
@@ -45,7 +49,7 @@ if __name__ == "__main__":
     #     batch_size = 100,
     #     basis_size = 40,
     #     basis_oversample = 10,
-    #     directory = "rom_data"
+    #     directory = str(ROM_DATA_DIR)
     # )
 
     # generate_rom_model(
@@ -61,6 +65,6 @@ if __name__ == "__main__":
     #     batch_size = 100,
     #     basis_size = 10,
     #     basis_oversample = 5,
-    #     directory = "rom_data"
+    #     directory = str(ROM_DATA_DIR)
     # )
 

@@ -43,7 +43,7 @@ if __name__ == "__main__":
     communicators = Communicators()
 
     def parameter_function(X):
-        return  np.exp(-13 * X[1]) + np.exp(13 * (X[1]-1))
+        return  - 2.5 + 4 * np.exp(-13 * X[1]) + 6.5 * np.exp(13 * (X[1]-1))
 
     def source(X):
         return (0.0+0.0*X[0], 0.0+0*X[0])
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     geometry = SplineGeometry.interpolate_map(
         [knots_x, knots_y],
         map,
-        gyroid.SchwarzDiamond().make_function(),
+        gyroid.SchoenIWP().make_function(),
         geometry_opts
     )
 
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     # solver.setup()
     # solver.solve()
     # solver.plot_solution()
-
+    # solver.plot_stress()
     
 
 
