@@ -1,3 +1,9 @@
+"""Linear PDE definitions and helpers used by FLASh.
+
+This module includes components for assembling elasticity stiffness/mass
+operators using quadrature and for working with unfitted finite element meshes.
+"""
+
 import numpy as np
 import sympy as sy
 import scipy as sp
@@ -138,6 +144,23 @@ def create_facet_quadrature(
 
 
 class Elasticity:
+    """Linear elasticity model used for assembling stiffness and mass operators.
+
+    Parameters are provided in terms of Young's modulus and Poisson's ratio. The
+    class supports assembling the local stiffness/mass matrices via quadrature
+    using QUGaR for unfitted finite element meshes.
+
+    Attributes:
+        E: Young's modulus.
+        nu: Poisson's ratio.
+        dim: Spatial dimension (2 by default).
+        exterior_bc: List of boundary condition tuples used by the higher-level solver.
+        source: Right-hand side/source function for the elasticity problem.
+        mu: Shear modulus computed from E and nu.
+        lambda_: First Lamé parameter computed from E and nu.
+        K_model, M_model, bM_model: Optional offline models (e.g., ROM) used in assembly.
+        K_full_core: Optional full core stiffness matrix used for offline/online computations.
+    """
 
     def __init__(
         self,
@@ -174,6 +197,29 @@ class Elasticity:
         return V
 
     def assemble_stiffness(self, unf_domain: UnfittedDomain, basis: Callable, coefficients: Callable, full_cell: bool = False) -> np.ndarray:
+        """Assemble the local stiffness matrix for an unfitted element.
+
+        The assembly uses quadrature points produced either by QUGaR (for unfitted
+        elements) or a standard tensor-product Gauss–Legendre rule (if `full_cell`
+        is True).
+
+        Parameters
+        ----------
+        unf_domain: UnfittedDomain
+            The unfitted domain description provided by QUGaR.
+        basis: Callable
+            Object providing a `evaluate_derivative` method returning basis derivatives.
+        coefficients: Callable
+            Function producing coefficient values at quadrature points.
+        full_cell: bool, optional
+            If True, use a full tensor-product quadrature on the reference square
+            instead of the unfitted quadrature. Defaults to False.
+
+        Returns
+        -------
+        np.ndarray
+            The assembled stiffness matrix of shape (ndof, ndof).
+        """
 
         n_quad_pts = 8
 
@@ -195,6 +241,26 @@ class Elasticity:
         return K
     
     def assemble_mass(self, unf_domain: UnfittedDomain, basis: Callable, coefficients: Callable) -> np.ndarray:
+        """Assemble the local mass matrix for an unfitted element.
+
+        The mass matrix is computed using QUGaR quadrature and the provided
+        coefficient function. The result is expanded to match the vector-valued
+        displacement space (2D elasticity). 
+
+        Parameters
+        ----------
+        unf_domain: UnfittedDomain
+            The unfitted domain description provided by QUGaR.
+        basis: Callable
+            Object providing an `evaluate` method returning basis function values.
+        coefficients: Callable
+            Function producing coefficient values at quadrature points.
+
+        Returns
+        -------
+        np.ndarray
+            The assembled mass matrix of shape (ndof, ndof).
+        """
 
         n_quad_pts = 8
 

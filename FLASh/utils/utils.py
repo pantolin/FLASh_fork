@@ -1,3 +1,9 @@
+"""Utility helpers used across the FLASh framework.
+
+This module provides small helper routines and shared utilities such as
+communication wrappers and output helpers for writing solution fields.
+"""
+
 import numpy as np
 import numpy.typing as npt
 
@@ -14,6 +20,15 @@ import basix
 import dolfinx
 
 class Communicators:
+    """Small wrapper for MPI communication objects used across FLASh.
+
+    Provides access to the PETSc communicator and the equivalent mpi4py communicator.
+
+    Attributes:
+        petsc_comm: The PETSc MPI communicator (PETSc.COMM_WORLD).
+        global_comm: The mpi4py communicator matching PETSc.COMM_WORLD.
+        self_comm: MPI communicator for single-process operations (MPI.COMM_SELF).
+    """
 
     def __init__(self):
         self.petsc_comm = PETSc.COMM_WORLD

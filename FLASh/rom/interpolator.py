@@ -1,3 +1,9 @@
+"""Reduced-order interpolation utilities.
+
+This module provides simple interpolator classes (e.g., tensor-product
+interpolators and MDEIM-style interpolators) used in ROM workflows.
+"""
+
 import numpy as np
 import scipy as sc
 
@@ -31,6 +37,22 @@ def evaluate_basis(basis, x, a = -1, b = 1):
 
 
 class Interpolator:
+    """Interpolation helper for tensor-product polynomial spaces.
+
+    This class builds a tensor-product interpolation basis over a hypercube
+    defined by `p0` and `p1`, using Chebyshev-type nodes in each direction.
+
+    Parameters
+    ----------
+    d: int
+        Dimension of the parametric domain.
+    p: int
+        Polynomial degree.
+    p0: np.ndarray
+        Lower corner of the bounding box.
+    p1: np.ndarray
+        Upper corner of the bounding box.
+    """
 
     def __init__(self, d: int, p: int, p0: np.ndarray, p1: np.ndarray) -> None:
 
@@ -99,6 +121,22 @@ class Interpolator:
         return  a @ b
     
 class MDEIM:
+    """Multi-dimensional DEIM-style interpolator.
+
+    This class builds a set of local interpolators over a partition of the parametric
+    domain and evaluates the corresponding local interpolant for a given point.
+
+    Parameters
+    ----------
+    n: int
+        Number of cells per direction in the parametric grid.
+    p: int
+        Polynomial degree of each local interpolator.
+    p0: np.ndarray
+        Lower corner of the bounding box.
+    p1: np.ndarray
+        Upper corner of the bounding box.
+    """
 
     def __init__(self, n: int, p: int, p0: np.ndarray, p1: np.ndarray) -> None:
 

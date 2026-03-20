@@ -1,3 +1,10 @@
+"""Geometry utilities for spline-based meshes.
+
+This module provides machinery for building spline geometry representations,
+computing Bezier extraction operators, and converting to coarse Cartesian meshes
+used in the FLASh framework.
+"""
+
 import numpy as np
 import scipy as sc
 import splipy as sp
@@ -353,6 +360,23 @@ class BezierElement:
     
 
 class SplineGeometry:
+    """Represents a parametric spline geometry and its associated mesh.
+
+    A spline geometry defines a mapping from the parametric space [0,1]^2 to the
+    physical domain using B-splines. It builds a coarse Cartesian mesh and
+    provides utilities to access Bezier element representations for each cell.
+
+    Attributes:
+        knots: Knot vectors for each parametric direction.
+        basis: B-spline basis objects for each direction.
+        control_points: Control points defining the mapped surface.
+        levelset: Level-set function defining embedded geometry for unfitted mesh.
+        degree: Polynomial degree of the spline basis.
+        basis_degree: Degree used for internal quadrature / basis evaluation.
+        elements: List of parametric elements (knot spans) per direction.
+        elements_basis: Support sets of basis functions for each element.
+        coarse_mesh: Coarse Cartesian mesh covering the parametric domain.
+    """
 
     def __init__(
         self,
@@ -396,6 +420,24 @@ class SplineGeometry:
         levelset,
         opts: dict = None
     ) -> Self:
+        """Create a SplineGeometry instance from control points.
+
+        Parameters
+        ----------
+        knots: list[int]
+            Knot vectors for each parametric direction.
+        control_points: np.ndarray
+            Control points defining the physical map.
+        levelset:
+            Level-set function describing the embedded geometry.
+        opts: dict, optional
+            Additional options including `spline_degree` and `basis_degree`.
+
+        Returns
+        -------
+        SplineGeometry
+            A new SplineGeometry instance.
+        """
 
         opts = opts or {}
 
@@ -415,6 +457,28 @@ class SplineGeometry:
         levelset,
         opts: dict = None
     ) -> Self:
+        """Create a SplineGeometry by interpolating a mapping function.
+
+        The mapping function should accept two 2D arrays (X, Y) of parametric
+        coordinates and return an array of physical coordinates of shape
+        (n_points, dim).
+
+        Parameters
+        ----------
+        knots: list[int]
+            Knot vectors for each parametric direction.
+        map: Callable
+            Mapping function from parametric coordinates to physical points.
+        levelset:
+            Level-set function describing the embedded geometry.
+        opts: dict, optional
+            Additional options including `spline_degree` and `basis_degree`.
+
+        Returns
+        -------
+        SplineGeometry
+            A new SplineGeometry instance.
+        """
 
         opts = opts or {}
 

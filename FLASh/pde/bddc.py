@@ -1,3 +1,9 @@
+"""BDDC solver implementation.
+
+Contains the BDDC solver, including assembly of local operators and the
+global interface solve using PETSc.
+"""
+
 import numpy as np
 import numpy.typing as npt
 import scipy.linalg
@@ -778,6 +784,17 @@ def reconstruct_solutions(
 
 
 class BDDC(BaseSolver):
+    """BDDC (Balancing Domain Decomposition by Constraints) solver.
+
+    This solver implements a dual-primal domain decomposition method using
+    FETI-DP style operators. It assembles local subdomain operators, builds the
+    global interface problem, and solves it using PETSc's Krylov solvers.
+
+    Attributes:
+        assembler: Assembler object that builds the local and global operators.
+        petsc_solver: PETSc KSP solver used for the global interface problem.
+        solution: PETSc vector containing the global interface unknowns.
+    """
 
     def __init__(self, geometry, linear_pde, communicators, opts=None):
 

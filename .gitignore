@@ -51,6 +51,7 @@ coverage.xml
 
 # Data directories (optional – remove if you want to keep data in repo)
 examples/data/
+docs/_build/
 
 # Other
 .DS_Store

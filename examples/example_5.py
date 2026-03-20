@@ -31,9 +31,7 @@ import dolfinx.fem
 import pyvista as pv
 
 # Paths
-EXAMPLES_DIR = Path(__file__).resolve().parent
-DATA_DIR = EXAMPLES_DIR / "data"
-ROM_DATA_DIR = DATA_DIR / "rom_data"
+from _paths import EXAMPLES_ROOT, ROM_DATA_DIR
 
 from mpi4py import MPI
 import qugar
@@ -71,7 +69,7 @@ if __name__ == "__main__":
 
     ##3    
 
-    data  = loadmat(str(EXAMPLES_DIR / "wrench_example" / "Wrench.mat"))
+    data  = loadmat(str(EXAMPLES_ROOT / "wrench_example" / "Wrench.mat"))
 
     nodes        = data['nodes']
     eleme_coefs  = data['eleme_coefs']

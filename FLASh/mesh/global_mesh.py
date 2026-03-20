@@ -1,3 +1,9 @@
+"""Mesh utilities for coarse and parametric Cartesian meshes.
+
+This module provides simple mesh representations and helpers for building
+regular tensor-product meshes and extracting connectivity information.
+"""
+
 import numpy as np
 import numpy.typing as npt
 
@@ -12,8 +18,6 @@ from FLASh.utils.utils import (
     create_Cartesian_mesh_nodes,
     create_Cartesian_mesh_edges
 )
-
-import numpy as np
 
 def create_inverse_conn(conn):
 
@@ -33,6 +37,12 @@ def create_inverse_conn(conn):
 
 
 class CoarseMesh:
+    """Simple representation of a coarse Cartesian mesh.
+
+    This class stores the connectivity and coordinates for a Cartesian mesh
+    (cells, edges, vertices) and provides utilities to set parameter fields and
+    query cell/vertex relations.
+    """
 
     def __init__(
         self,
@@ -149,6 +159,11 @@ class CoarseMesh:
 
 
 class ParametricMesh:
+    """Minimal parametric mesh representation used for interpolation and mapping.
+
+    The mesh is defined by connectivity (elements to vertex indices) and the
+    vertex coordinates.
+    """
 
     def __init__(
       self,

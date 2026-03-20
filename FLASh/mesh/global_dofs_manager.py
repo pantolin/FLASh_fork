@@ -138,6 +138,18 @@ class GlobalDofsManager:
         geometry: SplineGeometry,
         communicators
     ) -> None:
+        """Plot the coarse mesh and reparametrized wirebasket geometry.
+
+        This method uses PyVista to visualize the domain-level mesh and the
+        wirebasket structure for the given spline geometry.
+
+        Parameters
+        ----------
+        geometry: SplineGeometry
+            Geometry object used to build the mesh.
+        communicators:
+            MPI communicators to determine rank (only rank 0 does plotting).
+        """
         
         if communicators.global_comm.Get_rank() == 0:
         

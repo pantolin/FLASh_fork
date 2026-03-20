@@ -18,6 +18,17 @@ The library can be installed in editable mode using the provided installer scrip
 python install_all.py
 ```
 
+### Building the documentation
+
+The documentation is built using Sphinx. From the repository root, run:
+
+```bash
+python -m pip install -U sphinx
+sphinx-build -b html docs/ docs/_build/html
+```
+
+Then open `docs/_build/html/index.html` in a browser.
+
 This will:
 - Bootstrap and activate a conda environment (via `install_qugar_with_conda.sh`)
 - Install required Python dependencies

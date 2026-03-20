@@ -1,3 +1,9 @@
+"""Solver base classes and helpers.
+
+This module provides the `BaseSolver` abstract class used by the FLASh
+framework, as well as helper routines for writing solution fields.
+"""
+
 from abc import ABC, abstractmethod
 
 from mpi4py import MPI
@@ -14,6 +20,22 @@ def write_solutions(
         subdomain.write_solution(us[s_ind], f"subdomain_{s_id}")
 
 class BaseSolver(ABC):
+    """Base class for PDE solvers in the FLASh framework.
+
+    Subclasses must implement `_setup_extra`, `solve`, and `get_solution`. The
+    base class provides common setup utilities, plotting helpers, and statistics.
+
+    Parameters
+    ----------
+    geometry:
+        Geometry object describing the computational domain.
+    linear_pde:
+        PDE model instance (e.g., `Elasticity`).
+    communicators:
+        MPI communicator wrapper (see `FLASh.utils.Communicators`).
+    opts: dict, optional
+        Solver configuration options.
+    """
 
     def __init__(
             self, 
