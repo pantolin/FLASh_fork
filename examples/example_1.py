@@ -110,12 +110,13 @@ if __name__ == "__main__":
 
     geometry.coarse_mesh.set_parameter_field_from_function(parameter_function)
 
-    # GlobalDofsManager.plot(geometry, communicators)
+    GlobalDofsManager.plot(geometry, communicators)
 
     solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
     solver.setup()
     solver.solve()
     solver.plot_solution()
+    solver.write_solution()
     solver.plot_stress()
     
 

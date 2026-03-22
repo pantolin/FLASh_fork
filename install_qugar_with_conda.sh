@@ -7,8 +7,8 @@ set -euo pipefail
 #   2. Builds and installs QUGaR library and Python interface
 # Supports: macOS (Intel/Apple Silicon), Linux (x86_64/ARM), Windows (via Git Bash/WSL)
 
-ENV_NAME="${QUGAR_ENV_NAME:-qugar-env}"
-PYTHON_VERSION="${PYTHON_VERSION:-3.10}"
+ENV_NAME="${QUGAR_ENV_NAME:-flash-env}"
+PYTHON_VERSION="${PYTHON_VERSION:-3.12}"
 INSTALL_LAPACKE="${INSTALL_LAPACKE:-true}"
 INSTALL_DOLFINX="${INSTALL_DOLFINX:-true}"
 USE_CONDA_COMPILERS="${USE_CONDA_COMPILERS:-false}"

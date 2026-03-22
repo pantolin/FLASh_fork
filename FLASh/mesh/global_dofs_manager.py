@@ -95,6 +95,9 @@ class GlobalDofsManager:
         if rank == 0:
             print("\nSubdomains assembly.")
 
+        local_total = np.array(len(process_subdomains), dtype="i")
+        global_total = np.array(N, dtype="i")
+
         for s_ind, s_id in enumerate(process_subdomains):
 
             pts = geometry.coarse_mesh.get_cell_vertex_points(s_id)
@@ -123,12 +126,14 @@ class GlobalDofsManager:
 
             done_local = np.array(s_ind + 1, dtype="i")
             done_global = np.array(0, dtype="i")
-            communicators.global_comm.Reduce(done_local, done_global, op=MPI.SUM, root=0)
 
-            if rank == 0:
-                progress = done_global / N
-                sys.stdout.write(f"\033[F\033[KSubdomains assembly: {progress:.1%}\n")
-                sys.stdout.flush()
+            if s_ind % 5 == 0 or s_ind == local_total - 1:
+                communicators.global_comm.Reduce(done_local, done_global, op=MPI.SUM, root=0)
+
+                if rank == 0:
+                    progress = done_global / global_total
+                    sys.stdout.write(f"\033[F\033[KSubdomains assembly: {progress:.1%}\n")
+                    sys.stdout.flush()
 
 
         return GlobalDofsManager(geometry, subdomains, linear_pde, communicators)

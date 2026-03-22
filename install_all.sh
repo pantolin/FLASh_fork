@@ -22,7 +22,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${SCRIPT_DIR}"
 
 # Defaults (can be overridden via env vars)
-ENV_NAME="${QUGAR_ENV_NAME:-qugar-env}"
+ENV_NAME="${QUGAR_ENV_NAME:-flash-env}"
 DATA_URL="${DATA_URL:-}"
 DATA_DIR="${DATA_DIR:-${REPO_ROOT}/examples/data}"
 
@@ -33,7 +33,8 @@ if [[ ! -f "${REPO_ROOT}/install_qugar_with_conda.sh" ]]; then
 fi
 
 echo "[INFO] Running conda bootstrap script (this can take a while)..."
-bash "PYTHON_VERSION=3.12 ${REPO_ROOT}/install_qugar_with_conda.sh"
+export PYTHON_VERSION=3.12
+bash "${REPO_ROOT}/install_qugar_with_conda.sh"
 
 # 2) Activate the conda environment
 #    - Use `conda activate` via the conda.sh helper.
@@ -51,8 +52,18 @@ set -u
 
 # 3) Install Python dependencies and the local library
 python -m pip install --upgrade pip setuptools wheel
-python -m pip install -r "${REPO_ROOT}/requirements.txt"
 python -m pip install -e "${REPO_ROOT}"
+
+# Install pip packages
+python -m pip install splipy
+python -m pip install line_profiler
+python -m pip install tqdm
+python -m pip install sympy
+python -m pip install numba
+python -m pip install scikit-learn
+
+# Install conda package (MPI-enabled h5py)
+conda install -c conda-forge h5py=*=mpi_mpich_* -y
 
 # 4) Optional: download data from a Drive repository
 if [[ -n "${DATA_URL}" ]]; then
