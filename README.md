@@ -18,6 +18,12 @@ The library can be installed in editable mode using the provided installer scrip
 python install_all.py
 ```
 
+This will:
+- Bootstrap and activate a conda environment (via `install_qugar_with_conda.sh`)
+- Install required Python dependencies
+- Install this repository in editable mode (`pip install -e .`)
+- Optionally download example data if `DATA_URL` is set
+
 ### Building the documentation
 
 The documentation is built using Sphinx. From the repository root, run:
@@ -29,22 +35,6 @@ sphinx-build -b html docs/ docs/_build/html
 
 Then open `docs/_build/html/index.html` in a browser.
 
-This will:
-- Bootstrap and activate a conda environment (via `install_qugar_with_conda.sh`)
-- Install required Python dependencies
-- Install this repository in editable mode (`pip install -e .`)
-- Optionally download example data if `DATA_URL` is set
-
----
-
-## ▶️ Usage
-
-Examples are located in the `examples/` folder. For instance:
-
-```bash
-python examples/example_3.py
-```
-
 ---
 
 ## 📦 Data
@@ -55,6 +45,57 @@ Some examples rely on data stored under `examples/data/`. You can download recom
 DATA_URL="<google-drive-url>" python install_all.py
 ```
 
+---
+
+## 📁 Repository Structure
+
+If you download our prebuilt rom models make sure the structure of the data repository is correct
+
+```
+FLASh/
+│
+├── FLASh/
+│   ├── mesh/
+│   ├── pde/
+│   ├── rom/
+│   └── utils/
+│
+├── examples/
+│   ├── data/
+│   │   ├── figs/
+|   |   ├── results/
+|   |   └── rom_data/
+|   |       ├── ...
+|   |       └── rom_model/
+|   |           ├── bM_core
+|   |           ├── M_core
+|   |           └── K_core
+│   ├── wing_example/
+│   └── wrench_example/
+│
+└── docs/
+```
+
+
+---
+
+## ▶️ Usage
+
+Examples are located in the `examples/` folder. For instance:
+
+Some examples have jupyter notebooks available like `examples/example_1.ipynb`
+
+Examples can be run either in serial 
+
+```bash
+python examples/example_3.py
+```
+
+or in parallel 
+
+```bash
+mpirun -n 10 python examples/example_3.py
+```
 ---
 
 ## 📝 Notes

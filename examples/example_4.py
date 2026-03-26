@@ -1,7 +1,8 @@
 import numpy as np
-from pathlib import Path
 
-from FLASh.utils import Communicators
+from FLASh.utils import (
+    Communicators
+)
 
 from FLASh.mesh import (
     GlobalDofsManager,
@@ -10,16 +11,13 @@ from FLASh.mesh import (
 )
 from FLASh.pde import (
     Elasticity,
-    BDDC,
-    AMG,
-    Cholesky
+    BDDC
 )
 
-from FLASh.rom import MDEIM
+from FLASh.rom import (
+    MDEIM
+)
 
-dtype = np.float64
-
-# Paths
 from _paths import ROM_DATA_DIR
 
 if __name__ == "__main__":        

@@ -9,15 +9,8 @@ from abc import ABC, abstractmethod
 from mpi4py import MPI
 from FLASh.mesh.global_dofs_manager import GlobalDofsManager    
 
-def write_solutions(
-    us,
-    gbl_dofs_mngr: GlobalDofsManager
-) -> None:
-    
-    for s_ind, s_id in enumerate(gbl_dofs_mngr.process_subdomains):
 
-        subdomain = gbl_dofs_mngr.subdomains[s_ind]
-        subdomain.write_solution(us[s_ind], f"subdomain_{s_id}")
+
 
 class BaseSolver(ABC):
     """Base class for PDE solvers in the FLASh framework.
@@ -103,9 +96,21 @@ class BaseSolver(ABC):
 
         self.gbl_dofs_mngr.plot_solution(self.gbl_dofs_mngr.get_fs())
 
-    def write_solution(self):
-
+    def write_solution(self, path="results"):
+        """
+        Write the solution to files in the specified directory.
+        Ensures the directory exists.
+        Parameters
+        ----------
+        path : str, optional
+            Directory to save the results in (default is 'results').
+        """
+        import os
+        from pathlib import Path
         if self.solution is None:
             raise ValueError("No solution available. Please run the solver first.")
-        
-        write_solutions(self.get_solution(), self.gbl_dofs_mngr)
+        Path(path).mkdir(exist_ok=True, parents=True)
+        us = self.get_solution()
+        for s_ind, s_id in enumerate(self.gbl_dofs_mngr.process_subdomains):
+            subdomain = self.gbl_dofs_mngr.subdomains[s_ind]
+            subdomain.write_solution(us[s_ind], f"subdomain_{s_id}", path)

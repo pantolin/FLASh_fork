@@ -819,33 +819,37 @@ class Subdomain:
 
         return self.C.T @ u
 
-    def write_solution(self, u, name) -> None: 
-
+    def write_solution(self, u, name, path="results") -> None:
+        """
+        Write the solution to a file in the specified directory.
+        Parameters
+        ----------
+        u : array-like
+            Solution vector.
+        name : str
+            Base name for the output file.
+        path : str, optional
+            Directory to save the results in (default is 'results').
+        """
+        from pathlib import Path
         unf_mesh = self.create_mesh()
         V = dolfinx.fem.functionspace(unf_mesh, ("Lagrange", self._degree, (self._dim,)))
-        
         uh = dolfinx.fem.Function(V)
         uh.x.array[:] = self.get_fenicsx_function(u)
-
         reparam_degree = 3
         reparam = qugar.reparam.create_reparam_mesh(unf_mesh, degree=reparam_degree, levelset=False)
         reparam_mesh = reparam.create_mesh()
         reparam_mesh_wb = reparam.create_mesh(wirebasket=True)
-
         V_reparam = dolfinx.fem.functionspace(reparam_mesh, ("CG", reparam_degree, (self._dim,)))
         uh_reparam = dolfinx.fem.Function(V_reparam, dtype=dtype)
-
         cmap = reparam_mesh.topology.index_map(reparam_mesh.topology.dim)
         num_cells = cmap.size_local + cmap.num_ghosts
         cells = np.arange(num_cells, dtype=np.int32)
         interpolation_data = dolfinx.fem.create_interpolation_data(V_reparam, V, cells, padding=1.0e-14)
-
         uh_reparam.interpolate_nonmatching(uh, cells, interpolation_data=interpolation_data)
-
-        results_folder = Path("results")
+        results_folder = Path(path)
         results_folder.mkdir(exist_ok=True, parents=True)
         filename = results_folder / name
-
         with dolfinx.io.VTKFile(reparam_mesh.comm, filename.with_suffix(".pvd"), "w") as vtk:
             vtk.write_function(uh_reparam)
             vtk.write_mesh(reparam_mesh_wb)

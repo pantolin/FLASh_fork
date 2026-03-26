@@ -11,12 +11,12 @@ def plot_test_1():
     file_path = RESULTS_DIR / "test_1" / "data.h5"
     with h5py.File(file_path, "r") as f:
         bddc_iters = f["bddc_iters"][:]
-        amg_iters = f["amg_iters"][:]
+        pcg_iters = f["pcg_iters"][:]
         bddc_setup_time = f["bddc_setup_time"][:]
-        amg_setup_time = f["amg_setup_time"][:]
+        pcg_setup_time = f["pcg_setup_time"][:]
         cholesky_setup_time = f["cholesky_setup_time"][:]
         bddc_solve_time = f["bddc_solve_time"][:]
-        amg_solve_time = f["amg_solve_time"][:]
+        pcg_solve_time = f["pcg_solve_time"][:]
         cholesky_solve_time = f["cholesky_solve_time"][:]
         number_of_subdomains = f["number_of_subdomains"][:]
     
@@ -24,7 +24,7 @@ def plot_test_1():
 
     # Iterations
     axs[0, 0].plot(number_of_subdomains, bddc_iters, label="BDDC", marker='o')
-    axs[0, 0].plot(number_of_subdomains, amg_iters, label="AMG", marker='s')
+    axs[0, 0].plot(number_of_subdomains, pcg_iters, label="PCG", marker='s')
     axs[0, 0].set_xlabel("Number of subdomains")
     axs[0, 0].set_ylabel("Iterations")
     axs[0, 0].set_title("Solver Iterations vs Subdomains")
@@ -34,7 +34,7 @@ def plot_test_1():
 
     # Setup time
     axs[0, 1].plot(number_of_subdomains, bddc_setup_time, label="BDDC", marker='o')
-    axs[0, 1].plot(number_of_subdomains, amg_setup_time, label="AMG", marker='s')
+    axs[0, 1].plot(number_of_subdomains, pcg_setup_time, label="PCG", marker='s')
     axs[0, 1].plot(number_of_subdomains, cholesky_setup_time, label="Cholesky", marker='^')
     axs[0, 1].set_xlabel("Number of subdomains")
     axs[0, 1].set_ylabel("Setup Time (s)")
@@ -45,7 +45,7 @@ def plot_test_1():
 
     # Solve time
     axs[1, 0].plot(number_of_subdomains, bddc_solve_time, label="BDDC", marker='o')
-    axs[1, 0].plot(number_of_subdomains, amg_solve_time, label="AMG", marker='s')
+    axs[1, 0].plot(number_of_subdomains, pcg_solve_time, label="PCG", marker='s')
     axs[1, 0].plot(number_of_subdomains, cholesky_solve_time, label="Cholesky", marker='^')
     axs[1, 0].set_xlabel("Number of subdomains")
     axs[1, 0].set_ylabel("Solve Time (s)")
@@ -56,10 +56,10 @@ def plot_test_1():
 
     # Total time (setup + solve)
     bddc_total = bddc_setup_time + bddc_solve_time
-    amg_total = amg_setup_time + amg_solve_time
+    pcg_total = pcg_setup_time + pcg_solve_time
     cholesky_total = cholesky_setup_time + cholesky_solve_time
     axs[1, 1].plot(number_of_subdomains, bddc_total, label="BDDC", marker='o')
-    axs[1, 1].plot(number_of_subdomains, amg_total, label="AMG", marker='s')
+    axs[1, 1].plot(number_of_subdomains, pcg_total, label="PCG", marker='s')
     axs[1, 1].plot(number_of_subdomains, cholesky_total, label="Cholesky", marker='^')
     axs[1, 1].set_xlabel("Number of subdomains")
     axs[1, 1].set_ylabel("Total Time (s)")

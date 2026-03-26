@@ -27,6 +27,7 @@ def map(x, y):
 
     return np.stack([x, y, 0*x], axis=-1)
 
+from _paths import RESULTS_DIR
 
 if __name__ == "__main__":        
 
@@ -116,9 +117,7 @@ if __name__ == "__main__":
     solver.setup()
     solver.solve()
     solver.plot_solution()
-    solver.write_solution()
-    solver.plot_stress()
-    
+    solver.write_solution(str(RESULTS_DIR / "wrench_examples"))    
 
 
 

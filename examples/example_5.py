@@ -1,22 +1,20 @@
-import numpy as np
-import splipy as sp
-from pathlib import Path
- 
-from FLASh.utils import Communicators
-
 import sys
 sys.stdout.isatty = lambda: True
 
+import numpy as np
+
+from FLASh.utils import (
+    Communicators
+)
+
 from FLASh.mesh import (
     GlobalDofsManager,
-    SplineGeometry,
     gyroid
 )
+
 from FLASh.pde import (
     Elasticity,
     BDDC,
-    AMG,
-    Cholesky
 )
 
 from FLASh.rom import (
@@ -27,19 +25,9 @@ from example_5_utils import (
     WrenchGeometry
 )
 
-import dolfinx.fem
-import pyvista as pv
-
-# Paths
-from _paths import EXAMPLES_ROOT, ROM_DATA_DIR
-
-from mpi4py import MPI
-import qugar
-from qugar.mesh import create_unfitted_impl_Cartesian_mesh
+from _paths import EXAMPLES_ROOT, ROM_DATA_DIR, RESULTS_DIR
 
 from scipy.io import loadmat
-
-dtype = np.float64
 
 if __name__ == "__main__":        
 
@@ -99,24 +87,19 @@ if __name__ == "__main__":
         conn_edges_nodes,
         nodes,
         eleme_coefs,
-        gyroid.SchwarzDiamond().make_function(),
+        gyroid.SchoenIWP().make_function(),
         geometry_opts
     )
-
-    # def parameter_function(X):
-    #     return -2.0 + 0.0 * X[0]
     
     def parameter_function(X):
         num_points = X.shape[1]
-        random_vals = 0.1 + (0.9 - 0.1) * np.random.rand(num_points)
+        random_vals = 0.1 + 0.8 * np.random.rand(num_points)
         return random_vals
     
-    # values = np.array([3.5] * nodes_ex.size)
 
-    # geometry.coarse_mesh.set_custom_parameter_field(parameter_function, nodes_ex, values)
     geometry.coarse_mesh.set_parameter_field_from_function(parameter_function)
 
-    # GlobalDofsManager.plot(geometry, communicators)
+
 
     nodes_dir = np.unique(np.array(geometry.coarse_mesh.edge_vertex_conn)[edges_dir].flatten())
 
@@ -146,6 +129,7 @@ if __name__ == "__main__":
         if single_point:
             return mask[0]  
         return mask
+    
 
     def h_bc(X):
         return (0+0*X[0], 0+0*X[0])
@@ -205,38 +189,37 @@ if __name__ == "__main__":
 
     GlobalDofsManager.plot(geometry, communicators)
 
-    # solver = BDDC(geometry, elasticity_pde_rom, communicators, opts = opts)
-    # solver.setup()
-    # solver.solve()
-    # # # solver.write_solution()
+    solver = BDDC(geometry, elasticity_pde_rom, communicators, opts = opts)
+    solver.setup()
+    solver.solve()
+    solver.plot_solution()
+    solver.write_solution(str(RESULTS_DIR / "wrench_example_rom"))
 
-    # solver.plot_solution()
+    rom_solution = solver.get_solution()
 
-    # rom_solution = solver.get_solution()
+    sbdmn_opts = {
+        "stabilize" : False,
+        "assemble" : True
+    }
 
-    # sbdmn_opts = {
-    #     "stabilize" : False,
-    #     "assemble" : True
-    # }
+    gdm_opts = {
+        "subdomain_opts" : sbdmn_opts
+    }
 
-    # gdm_opts = {
-    #     "subdomain_opts" : sbdmn_opts
-    # }
+    opts = {
+        "global_dofs_manager_opts": gdm_opts
+    }
 
-    # opts = {
-    #     "global_dofs_manager_opts": gdm_opts
-    # }
+    solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
+    solver.setup()
+    solver.solve()
+    solver.plot_solution()
+    solver.write_solution(str(RESULTS_DIR / "wrench_example"))
 
-    # solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
-    # solver.setup()
-    # solver.solve()
-    # solver.plot_solution()
-    # solver.write_solution()
+    solution = solver.get_solution()
 
-    # solution = solver.get_solution()
-
-    # if communicators.global_comm.Get_rank() == 0:
-    #     print("Solution error: ", solver.gbl_dofs_mngr.compute_error(rom_solution, solution))
+    if communicators.global_comm.Get_rank() == 0:
+        print("Solution error: ", solver.gbl_dofs_mngr.compute_error(rom_solution, solution))
 
     
 

@@ -386,7 +386,7 @@ def reconstruct_solutions(
     return us
 
 
-class AMG(BaseSolver):
+class PCG(BaseSolver):
 
     def __init__(self, geometry, linear_pde, communicators, opts=None):
 
@@ -422,9 +422,9 @@ class AMG(BaseSolver):
         self.stats["total time"] = self.stats["setup time"] + self.stats["assemble time"] + solve_time
         self.stats["iterations"] = iterations
         
-        if rank == 0 and self.opts.get("print_stats", True):
 
-            print("#### AMG Solver ####\n")
+        if rank == 0 and self.opts.get("print_stats", True):
+            print("#### PCG Solver ####\n")
 
             print(f"Number of subdomains: {self.gbl_dofs_mngr.get_num_subdomains()}.")
             print(f"Number of global active dofs: {self.assembler.total_act_dofs}.\n")

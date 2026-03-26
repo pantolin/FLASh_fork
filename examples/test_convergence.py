@@ -35,13 +35,28 @@ if not has_PETSc:
 
 # +
 
+### OUR PAPER GEOMETRY
+
+
+# xmin = np.array([0.0, 0.0], dtype=np.float64)
+# xmax = np.array([1.0, 1.0], dtype=np.float64)
+
+
+# dtype = np.float64
+# levelset = gyroid.SchwarzDiamond().make_function()
+# impl_func = levelset(np.array(4 * [0.5]), xmin, xmax)
+
+
+### A square with a cilyndrical hole
+
+
 xmin = np.array([0.0, 0.0], dtype=np.float64)
 xmax = np.array([1.0, 1.0], dtype=np.float64)
-
+center = (xmin + xmax) / 2.0
+R = 0.2
 
 dtype = np.float64
-levelset = gyroid.SchwarzDiamond().make_function()
-impl_func = levelset(np.array(4 * [0.5]), xmin, xmax)
+impl_func = qugar.impl.create_negative(qugar.impl.create_disk(R, center=center))
 
 # -
 
@@ -89,10 +104,10 @@ def sigma_expr(u):
     # For a 2D problem, Identity(2) creates a 2x2 identity tensor
     return 2.0 * mu * epsilon_expr(u) + lmbda * ufl.tr(epsilon_expr(u)) * ufl.Identity(2)
 
-    x, y = sy.symbols('x y')    
+    # x, y = sy.symbols('x y')    
 
-    u1 = 0.1 * sy.sin(sy.pi * (x))**2 * sy.sin(sy.pi * (y))**2 * (-1+2*y)
-    u2 = 0.1 * sy.sin(sy.pi * (x))**2 * sy.sin(sy.pi * (y))**2 * (1-2*x)
+    # u1 = 0.1 * sy.sin(sy.pi * (x))**2 * sy.sin(sy.pi * (y))**2 * (-1+2*y)
+    # u2 = 0.1 * sy.sin(sy.pi * (x))**2 * sy.sin(sy.pi * (y))**2 * (1-2*x)
 
 def u_exact_expr(x):
     """Exact displacement solution as a UFL expression."""
