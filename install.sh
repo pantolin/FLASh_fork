@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-# install_all.sh
-# --------------
+# install.sh
+# ----------
 # Convenience script to:
 #  1) Run the existing `install_qugar_with_conda.sh` conda bootstrap
 #  2) Install additional Python dependencies via pip
@@ -10,9 +10,9 @@ set -eo pipefail
 #  4) Download the ROM database from Zenodo
 #
 # Usage:
-#   ./install_all.sh
-#   ./install_all.sh --skip-data
-#   DATA_DIR="/path/to/data" ./install_all.sh
+#   ./install.sh
+#   ./install.sh --skip-data
+#   DATA_DIR="/path/to/data" ./install.sh
 #
 # Notes:
 # - The ROM database is downloaded from Zenodo by default.

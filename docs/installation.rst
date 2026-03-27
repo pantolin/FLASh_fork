@@ -11,7 +11,7 @@ Run the installer script:
 
 .. code-block:: bash
 
-   python install_all.py
+   python install.py
 
 When you run this script, it first activates / bootstraps a conda environment
 and installs **QUGaR** (via `install_qugar_with_conda.sh`) before installing the
@@ -28,7 +28,7 @@ To skip the ROM database download:
 
 .. code-block:: bash
 
-   python install_all.py --skip-data
+   python install.py --skip-data
 
 If you prefer, you can also install manually from an existing Python
 environment:

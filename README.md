@@ -15,7 +15,7 @@ The library can be installed in editable mode using the provided installer scrip
 ### Run the installer script
 
 ```bash
-python install_all.py
+python install.py
 ```
 
 This will:
@@ -27,7 +27,7 @@ This will:
 To skip the data download:
 
 ```bash
-python install_all.py --skip-data
+python install.py --skip-data
 ```
 
 ### Building the documentation
@@ -107,4 +107,4 @@ mpirun -n 10 python examples/example_3.py
 
 ## 📝 Notes
 
-- The script `install_all.sh` is also included for users who prefer running the installation steps directly from bash.
+- The script `install.sh` is also included for users who prefer running the installation steps directly from bash.
