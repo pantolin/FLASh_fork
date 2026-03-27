@@ -18,7 +18,7 @@ import sys
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Install the FLASh library (editable) using the bundled installer script.")
-    parser.add_argument("--data-url", help="Optional Google Drive URL (folder or file) to download example data.")
+    parser.add_argument("--skip-data", action="store_true", help="Skip downloading the ROM database from Zenodo.")
     parser.add_argument("--data-dir", help="Directory to place downloaded data.")
     parser.add_argument("--env-name", help="Conda environment name used by the installer.")
     args = parser.parse_args(argv)
@@ -31,14 +31,16 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     env = os.environ.copy()
-    if args.data_url:
-        env["DATA_URL"] = args.data_url
     if args.data_dir:
         env["DATA_DIR"] = args.data_dir
     if args.env_name:
         env["QUGAR_ENV_NAME"] = args.env_name
 
-    return subprocess.call(["bash", install_script], env=env)
+    cmd = ["bash", install_script]
+    if args.skip_data:
+        cmd.append("--skip-data")
+
+    return subprocess.call(cmd, env=env)
 
 
 if __name__ == "__main__":

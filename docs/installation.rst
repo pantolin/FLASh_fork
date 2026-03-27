@@ -22,7 +22,13 @@ The installer script performs:
 - conda environment creation/activation (`install_qugar_with_conda.sh`)
 - installation of required Python dependencies
 - `pip install -e .` for FLASh
-- optional data download via `DATA_URL` (if set)
+- download of the ROM database from `Zenodo <https://zenodo.org/records/19254389>`_
+
+To skip the ROM database download:
+
+.. code-block:: bash
+
+   python install_all.py --skip-data
 
 If you prefer, you can also install manually from an existing Python
 environment:
