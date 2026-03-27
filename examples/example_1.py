@@ -11,7 +11,6 @@ from FLASh.mesh import (
 from FLASh.pde import (
     Elasticity,
     BDDC,
-    AMG,
     Cholesky
 )
 
