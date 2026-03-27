@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 
 # install_all.sh
 # --------------
@@ -45,10 +45,8 @@ if ! command -v conda &>/dev/null; then
   exit 1
 fi
 
-set +u
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "${ENV_NAME}"
-set -u
 
 # 3) Install Python dependencies and the local library
 python -m pip install --upgrade pip setuptools wheel
