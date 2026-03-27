@@ -15,5 +15,3 @@ pydantic
 # tqdm is used for progress bars in some utilities
 tqdm
 
-# Optional (use if you want to use gdown for Google Drive downloads)
-gdown
