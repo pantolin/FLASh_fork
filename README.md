@@ -77,8 +77,8 @@ FLASh/
 |   |           ├── bM_core
 |   |           ├── M_core
 |   |           └── K_core
-│   ├── wing_example/
-│   └── wrench_example/
+│   │   ├── wing/
+│   │   └── wrench/
 │
 └── docs/
 ```
