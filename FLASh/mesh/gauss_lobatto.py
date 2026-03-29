@@ -316,7 +316,7 @@ class Lagrange2D:
             # Derivative w.r.t x
             contour1 = axs[1].contourf(X, Y, dC_dx[:, :, i], levels=20, cmap='coolwarm')
             fig.colorbar(contour1, ax=axs[1])
-            axs[1].set_title(f'$\partial_x B{i}$')
+            axs[1].set_title(f'$\\partial_x B{i}$')
             axs[1].set_xlabel('x')
             axs[1].set_ylabel('y')
             axs[1].set_xticks(self._nodes[0])
@@ -326,7 +326,7 @@ class Lagrange2D:
             # Derivative w.r.t y
             contour2 = axs[2].contourf(X, Y, dC_dy[:, :, i], levels=20, cmap='coolwarm')
             fig.colorbar(contour2, ax=axs[2])
-            axs[2].set_title(f'$\partial_y B{i}$')
+            axs[2].set_title(f'$\\partial_y B{i}$')
             axs[2].set_xlabel('x')
             axs[2].set_ylabel('y')
             axs[2].set_xticks(self._nodes[0])

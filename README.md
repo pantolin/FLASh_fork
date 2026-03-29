@@ -15,14 +15,20 @@ The library can be installed in editable mode using the provided installer scrip
 ### Run the installer script
 
 ```bash
-python install_all.py
+python install.py
 ```
 
 This will:
 - Bootstrap and activate a conda environment (via `install_qugar_with_conda.sh`)
 - Install required Python dependencies
 - Install this repository in editable mode (`pip install -e .`)
-- Optionally download example data if `DATA_URL` is set
+- Download the ROM database from [Zenodo](https://zenodo.org/records/19254389)
+
+To skip the data download:
+
+```bash
+python install.py --skip-data
+```
 
 ### Building the documentation
 
@@ -39,10 +45,11 @@ Then open `docs/_build/html/index.html` in a browser.
 
 ## 📦 Data
 
-Some examples rely on data stored under `examples/data/`. You can download recommended datasets by setting `DATA_URL` when running the installer:
+Some examples rely on data stored under `examples/data/`. The ROM database (~6.3 GB) is automatically downloaded from [Zenodo](https://zenodo.org/records/19254389) during installation, which may take some time depending on your connection. To download it manually:
 
 ```bash
-DATA_URL="<google-drive-url>" python install_all.py
+curl -L -o rom_data.tar.gz https://zenodo.org/records/19254389/files/rom_data.tar.gz
+tar -xzf rom_data.tar.gz -C examples/data/
 ```
 
 ---
@@ -70,8 +77,8 @@ FLASh/
 |   |           ├── bM_core
 |   |           ├── M_core
 |   |           └── K_core
-│   ├── wing_example/
-│   └── wrench_example/
+│   │   ├── wing/
+│   │   └── wrench/
 │
 └── docs/
 ```
@@ -100,4 +107,4 @@ mpirun -n 10 python examples/example_3.py
 
 ## 📝 Notes
 
-- The script `install_all.sh` is also included for users who prefer running the installation steps directly from bash.
+- The script `install.sh` is also included for users who prefer running the installation steps directly from bash.

@@ -669,8 +669,8 @@ install_qugar() {
         log_info "Removing existing qugar directory..."
         rm -rf "${QUGAR_DIR}"
     fi
-    log_info "Cloning QUGaR repository..."
-    "${GIT_BIN}" clone https://github.com/pantolin/qugar.git "${QUGAR_DIR}"
+    log_info "Cloning QUGaR repository (v0.2.0)..."
+    "${GIT_BIN}" clone --branch v0.2.0 https://github.com/pantolin/qugar.git "${QUGAR_DIR}"
     
     # Create build directory after cloning
     mkdir -p "${BUILD_DIR}"

@@ -15,7 +15,6 @@ from FLASh.mesh import (
 from FLASh.pde import (
     Elasticity,
     BDDC,
-    AMG,
     Cholesky
 )
 
@@ -26,7 +25,7 @@ from FLASh.rom import (
 from scipy.io import loadmat
 
 # Paths
-from _paths import EXAMPLES_ROOT, ROM_DATA_DIR, RESULTS_DIR
+from _paths import DATA_ROOT, ROM_DATA_DIR, RESULTS_DIR
 
 dtype = np.float64
 
@@ -63,11 +62,11 @@ if __name__ == "__main__":
 
     #### 
 
-    data  = loadmat(str(EXAMPLES_ROOT / "wing_example" / "WingForce.mat"))
+    data  = loadmat(str(DATA_ROOT / "wing" / "WingForce.mat"))
     coefs_f = data['coefs']
     knt_f   = data['knt'].flatten()
 
-    data  = loadmat(str(EXAMPLES_ROOT / "wing_example" / "WingSection.mat"))
+    data  = loadmat(str(DATA_ROOT / "wing" / "WingSection.mat"))
     coefs = data['coefs'].transpose(1, 2, 0)
     coefs = np.concatenate([coefs, np.zeros((*coefs.shape[:2], 1))], axis=-1)
     knt1  = data['knt1'].flatten()

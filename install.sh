@@ -1,21 +1,22 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eo pipefail
 
-# install_all.sh
-# --------------
+# install.sh
+# ----------
 # Convenience script to:
 #  1) Run the existing `install_qugar_with_conda.sh` conda bootstrap
 #  2) Install additional Python dependencies via pip
 #  3) Install the local FLASh library in editable mode
-#  4) Optionally download data from a Drive repository (Google Drive / shared folder)
+#  4) Download the ROM database from Zenodo
 #
 # Usage:
-#   ./install_all.sh
-#   DATA_URL="<google-drive-folder-or-file-url>" ./install_all.sh
-#   DATA_URL="<url>" DATA_DIR="/path/to/data" ./install_all.sh
+#   ./install.sh
+#   ./install.sh --skip-data
+#   DATA_DIR="/path/to/data" ./install.sh
 #
 # Notes:
-# - `DATA_URL` is optional; if set, the script will try to download it using `gdown`.
+# - The ROM database is downloaded from Zenodo by default.
+# - Pass --skip-data to skip the download step.
 # - This script assumes `conda` is on PATH. If not, start from a shell that sources conda.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,8 +24,16 @@ REPO_ROOT="${SCRIPT_DIR}"
 
 # Defaults (can be overridden via env vars)
 ENV_NAME="${QUGAR_ENV_NAME:-flash-env}"
-DATA_URL="${DATA_URL:-}"
+DATA_URL="https://zenodo.org/records/19254389/files/rom_data.tar.gz"
 DATA_DIR="${DATA_DIR:-${REPO_ROOT}/examples/data}"
+SKIP_DATA=false
+
+# Parse arguments
+for arg in "$@"; do
+  case "$arg" in
+    --skip-data) SKIP_DATA=true ;;
+  esac
+done
 
 # 1) Run conda-based bootstrap (creates/updates conda env + builds/install QUGaR internals)
 if [[ ! -f "${REPO_ROOT}/install_qugar_with_conda.sh" ]]; then
@@ -45,10 +54,8 @@ if ! command -v conda &>/dev/null; then
   exit 1
 fi
 
-set +u
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "${ENV_NAME}"
-set -u
 
 # 3) Install Python dependencies and the local library
 python -m pip install --upgrade pip setuptools wheel
@@ -65,25 +72,27 @@ python -m pip install scikit-learn
 # Install conda package (MPI-enabled h5py)
 conda install -c conda-forge h5py=*=mpi_mpich_* -y
 
-# 4) Optional: download data from a Drive repository
-if [[ -n "${DATA_URL}" ]]; then
+# 4) Download ROM database from Zenodo
+if [[ "${SKIP_DATA}" == "false" ]]; then
   mkdir -p "${DATA_DIR}"
-  echo "[INFO] Downloading data from ${DATA_URL} into ${DATA_DIR}"
+  echo "[INFO] Downloading ROM database from ${DATA_URL} into ${DATA_DIR}"
 
-  # Use gdown if available, otherwise install it (it is in requirements.txt so should be present)
-  if command -v gdown &>/dev/null; then
-    gdown --folder --output "${DATA_DIR}" "${DATA_URL}" || true
-    gdown "${DATA_URL}" -O "${DATA_DIR}/download" || true
+  if command -v curl &>/dev/null; then
+    curl -L -o "${DATA_DIR}/rom_data.tar.gz" "${DATA_URL}"
+  elif command -v wget &>/dev/null; then
+    wget -O "${DATA_DIR}/rom_data.tar.gz" "${DATA_URL}"
   else
-    echo "[WARN] gdown not found; attempting to install it..."
-    python -m pip install gdown
-    gdown --folder --output "${DATA_DIR}" "${DATA_URL}" || true
-    gdown "${DATA_URL}" -O "${DATA_DIR}/download" || true
+    echo "[ERROR] Neither curl nor wget found. Please install one and re-run."
+    exit 1
   fi
 
-  echo "[INFO] Data download complete (check ${DATA_DIR})."
+  echo "[INFO] Unpacking ROM database..."
+  tar -xzf "${DATA_DIR}/rom_data.tar.gz" -C "${DATA_DIR}"
+  rm "${DATA_DIR}/rom_data.tar.gz"
+
+  echo "[INFO] ROM database downloaded and unpacked in ${DATA_DIR}."
 else
-  echo "[INFO] DATA_URL not set; skipping data download."
+  echo "[INFO] Skipping ROM database download (--skip-data)."
 fi
 
 echo "[SUCCESS] Setup complete. Activate the environment with: conda activate ${ENV_NAME}"

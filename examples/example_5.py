@@ -25,7 +25,7 @@ from example_5_utils import (
     WrenchGeometry
 )
 
-from _paths import EXAMPLES_ROOT, ROM_DATA_DIR, RESULTS_DIR
+from _paths import DATA_ROOT, ROM_DATA_DIR, RESULTS_DIR
 
 from scipy.io import loadmat
 
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     ##3    
 
-    data  = loadmat(str(EXAMPLES_ROOT / "wrench_example" / "Wrench.mat"))
+    data  = loadmat(str(DATA_ROOT / "wrench" / "Wrench.mat"))
 
     nodes        = data['nodes']
     eleme_coefs  = data['eleme_coefs']
