@@ -1,3 +1,9 @@
+"""
+Assesses the accuracy of the reduced basis generated for an MDEIM model in FLASh.
+Does not test the interpolator or save the basis; only computes and reports basis errors for given parameters.
+Useful for validating basis construction routines.
+"""
+
 import numpy as np
 import scipy as sp
 from pathlib import Path

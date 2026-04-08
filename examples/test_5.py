@@ -1,3 +1,8 @@
+"""
+Tests the performance and scalability of the FLASh method on larger problems.
+Intended for benchmarking parallel efficiency and computational cost.
+"""
+
 import numpy as np
 from pathlib import Path
 

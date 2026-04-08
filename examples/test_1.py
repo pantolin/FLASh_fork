@@ -1,3 +1,8 @@
+"""
+Compares performance of direct (Cholesky), PCG (with SOR preconditioner), and BDDC solvers.
+Benchmarks solver efficiency and accuracy on a standard test problem.
+"""
+
 import numpy as np
 
 from FLASh.utils import Communicators

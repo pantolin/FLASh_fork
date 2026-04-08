@@ -1,3 +1,8 @@
+"""
+Test case: simulates a quarter-disc with one fixed side and a downward traction on the other.
+Used for validating solver accuracy and boundary condition handling.
+"""
+
 import numpy as np
 
 from FLASh.utils import (
@@ -132,7 +137,7 @@ if __name__ == "__main__":
         "global_dofs_manager_opts": gdm_opts
     }
 
-    i = 10
+    i = 1
     n = [4*i, 2*i]
 
     P0 = np.array([0.0, 0.0])

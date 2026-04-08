@@ -589,7 +589,7 @@ class SplineGeometry:
         plt.grid(True)
         plt.show()
 
-    def countour(
+    def coeff_error(
         self
     ) -> None:
 
@@ -608,7 +608,7 @@ class SplineGeometry:
             for y0, y1 in zip(knots_y[self.degree:-self.degree-1], knots_y[self.degree+1:-self.degree]):
 
                 center = 0.5*np.array([x0+x1,y0+y1])
-                bezier_element = self.get_bezier_element(center)
+                bezier_element = self.get_bezier_element_from_point(center)
 
                 x = np.linspace(0, 1, 10)
                 X, Y = np.meshgrid(x, x, indexing="ij")
@@ -659,7 +659,7 @@ class SplineGeometry:
             for y0, y1 in zip(knots_y[self.degree:-self.degree-1], knots_y[self.degree+1:-self.degree]):
 
                 center = 0.5*np.array([x0+x1,y0+y1])
-                bezier_element = self.get_bezier_element(center)
+                bezier_element = self.get_bezier_element_from_point(center)
 
                 x = np.linspace(0, 1, 10)
                 X, Y = np.meshgrid(x, x, indexing="ij")

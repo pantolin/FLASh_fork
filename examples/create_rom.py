@@ -1,3 +1,8 @@
+"""
+Script for generating reduced-order models (ROM) and snapshots using the FLASh framework.
+Configures parameters and calls routines to build and save ROM data for various microstructures.
+Intended for offline ROM preparation and dataset creation.
+"""
 import numpy as np
 from pathlib import Path
 
@@ -17,14 +22,14 @@ if __name__ == "__main__":
         "schoen_iwp_3", 
         levelset = gyroid.SchoenIWP().make_function(), 
         epsilon_0 = -2.5, 
-        epsilon_1 = 3.0, 
-        n = 1, 
-        p = 2, 
+        epsilon_1 = 2.5, 
+        n = 2, 
+        p = 6, 
         d = 4, 
-        samples_per_basis = 15,
+        samples_per_basis = 100,
         batch_size = 100,
-        basis_size = 7,
-        basis_oversample = 3,
+        basis_size = 40,
+        basis_oversample = 20,
         directory = str(ROM_DATA_DIR)
     )
 

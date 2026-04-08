@@ -1,3 +1,8 @@
+"""
+Demonstrates application of the FLASh method to a disc domain.
+Shows how to set up geometry, boundary conditions, and solve using the framework.
+"""
+
 import numpy as np
 
 from FLASh.utils import Communicators
@@ -10,7 +15,7 @@ from FLASh.mesh import (
 from FLASh.pde import (
     Elasticity,
     BDDC,
-    Cholesky
+    PCG
 )
 
 dtype = np.float64
@@ -76,8 +81,6 @@ if __name__ == "__main__":
     elasticity_pde = Elasticity(
         exterior_bc = exterior_bc,
         source = source,
-        # E = 70e9,
-        # nu = 0.3
     )
 
     sbdmn_opts = {
@@ -116,19 +119,11 @@ if __name__ == "__main__":
 
     geometry.coarse_mesh.set_parameter_field_from_function(parameter_function)
 
-    # if communicators.global_comm.Get_rank() == 0:
-    #     geometry.plot()
-    #     geometry.plot_det()
-    #     geometry.plot_arclen()
-
-    # communicators.global_comm.Barrier()
-
-    GlobalDofsManager.plot(geometry, communicators)
-    # solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
-    # solver.setup()
-    # solver.solve()
-    # solver.plot_solution()
-    # solver.plot_stress()
+    # GlobalDofsManager.plot(geometry, communicators)
+    solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
+    solver.setup()
+    solver.solve()
+    solver.plot_solution()
     
 
 
