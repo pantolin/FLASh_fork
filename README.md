@@ -4,7 +4,7 @@ This repository contains the code and data used for the paper "---" (replace wit
 
 This code was developed by Gonzalo Bonilla Moreno during a stay at the MNS lab at EPFL (https://www.epfl.ch/labs/mns/) under the supervision of Pablo Antolin. The macro geometries for the wrench and wing examples were designed by Giuliano Guarino.
 
-This code uses **[QUGaR](https://github.com/your-org/qugar)** to compute numerical quadratures and **FEniCS** for visualization of results.
+This code uses **[QUGaR](https://github.com/pantolin/qugar)** to compute numerical quadratures and **[FEniCS](https://fenicsproject.org)** for visualization of results.
 
 ---
 
