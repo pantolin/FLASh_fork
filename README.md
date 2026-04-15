@@ -1,6 +1,8 @@
 # FLASh: Fast simulation tools for lattice structures
 
-This repository contains the code and data used for the paper "---" (replace with the exact paper title and citation).
+This repository contains the code and data used for the paper:
+
+> G. Bonilla Moreno, G. Guarino, P. Antolin, "A ROM-based BDDC solver for unfitted p-FEM level-set-based lattice structures", arXiv preprint, 2026. [arXiv:2604.09113](https://arxiv.org/abs/2604.09113)
 
 This code was developed by Gonzalo Bonilla Moreno during a stay at the MNS lab at EPFL (https://www.epfl.ch/labs/mns/) under the supervision of Pablo Antolin. The macro geometries for the wrench and wing examples were designed by Giuliano Guarino.
 
