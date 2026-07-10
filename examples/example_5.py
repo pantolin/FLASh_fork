@@ -33,9 +33,10 @@ if __name__ == "__main__":
 
     
     ### Load ROM models ###
-    
-    epsilon_min = 0.1
-    epsilon_max = 0.9
+
+    # The schoen_iwp_3 models are trained on the threshold box [-2.5, 2.5]^4.
+    epsilon_min = -2.5
+    epsilon_max = 2.5
 
     n_rom = 2
     p_rom = 6
@@ -45,15 +46,15 @@ if __name__ == "__main__":
     p1 = np.array([epsilon_max] * d_rom)
 
     k_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    k_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core"))
+    k_core_model.set_up_from_files(str(ROM_DATA_DIR / "schoen_iwp_3" / "K_core"))
 
     m_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    m_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "M_core"))
+    m_core_model.set_up_from_files(str(ROM_DATA_DIR / "schoen_iwp_3" / "M_core"))
 
     bm_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    bm_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "bM_core"))
+    bm_core_model.set_up_from_files(str(ROM_DATA_DIR / "schoen_iwp_3" / "bM_core"))
 
-    K_core_full = np.load(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core" / "full_array.npy"))
+    K_core_full = np.load(str(ROM_DATA_DIR / "schoen_iwp_3" / "K_core" / "full_array.npy"))
 
     ##3    
 
@@ -91,11 +92,12 @@ if __name__ == "__main__":
         geometry_opts
     )
     
+    rng = np.random.default_rng(20260213)
+
     def parameter_function(X):
         num_points = X.shape[1]
-        random_vals = 0.1 + 0.8 * np.random.rand(num_points)
-        return random_vals
-    
+        return rng.uniform(epsilon_min, epsilon_max, num_points)
+
 
     geometry.coarse_mesh.set_parameter_field_from_function(parameter_function)
 
@@ -175,7 +177,7 @@ if __name__ == "__main__":
 
     sbdmn_opts = {
         "stabilize" : True,
-        "stabilization": 1e-5,
+        "stabilization": 5e-4,
         "assemble" : True
     }
 
