@@ -2,6 +2,8 @@
 Assesses the accuracy of the reduced basis generated for an MDEIM model in FLASh.
 Does not test the interpolator or save the basis; only computes and reports basis errors for given parameters.
 Useful for validating basis construction routines.
+
+Reproduces Figure 14 (Section 5.1.2, "Accuracy of the reduced order model").
 """
 
 import numpy as np

@@ -1,6 +1,10 @@
 """
 Compares convergence rates between cutFEM and p-FEM elements.
 Useful for evaluating element technology choices in FLASh.
+
+Intended to reproduce Figure 9 (Section 5.1.1, "Accuracy of the p-FEM
+discretization"); the paper's Schoen FRD single-cell case is commented out
+(see the "OUR PAPER GEOMETRY" block below) in favor of a disk-hole demo.
 """
 
 from pathlib import Path

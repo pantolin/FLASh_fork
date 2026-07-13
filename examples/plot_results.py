@@ -1,3 +1,12 @@
+"""
+Second-stage plotting for the test_*.py / rom_basis_test.py data files.
+
+Maps each plotting function to the figure it reproduces: plot_test_1 ->
+Figure 16 (Sec. 5.1.3), plot_test_2 -> Figure 15 (Sec. 5.1.2), plot_test_4 ->
+Figure 17 (Sec. 5.1.3), plot_test_5 -> Figure 18 (Sec. 5.1.3), plot_test_6 ->
+Figure 13 (Sec. 5.1.2), plot_rom_basis_test(_bis) -> Figure 14 (Sec. 5.1.2).
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import os

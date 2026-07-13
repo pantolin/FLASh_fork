@@ -1,3 +1,7 @@
+"""
+Reproduces Figure 11(a) (Section 5.1.1, "Accuracy of the stabilization").
+"""
+
 from pathlib import Path
 import sys
 import os

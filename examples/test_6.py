@@ -1,5 +1,7 @@
 """
 Assesses the effect of fast assembly techniques on convergence and error.
+
+Reproduces Figure 13 (Section 5.1.2, "Accuracy of the fast assembly technique").
 """
 
 import numpy as np

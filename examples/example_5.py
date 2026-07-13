@@ -1,6 +1,10 @@
 """
 Simulates a wrench to test FLASh methods on a non-spline macro geometry.
 Useful for evaluating framework flexibility with complex, real-world shapes.
+
+Reproduces the coarse wrench of Figure 20(a,b) (Section 5.2.2, "Lattice wrench").
+See wrench_refined.py for the dense wrench (Figure 20c,d) and the
+h-refinement study (Figure 21).
 """
 
 import sys

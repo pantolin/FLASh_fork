@@ -1,6 +1,8 @@
 """
 Compares performance of direct (Cholesky), PCG (with SOR preconditioner), and BDDC solvers.
 Benchmarks solver efficiency and accuracy on a standard test problem.
+
+Reproduces Figure 16 (Section 5.1.3, "Comparison with other solvers").
 """
 
 import numpy as np

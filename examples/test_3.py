@@ -1,5 +1,7 @@
 """
 Evaluates the impact of various approximations introduced in the FLASh method on solution error.
+
+Internal precursor to test_4.py; not referenced by a numbered figure in the paper.
 """
 
 import numpy as np

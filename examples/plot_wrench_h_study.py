@@ -1,3 +1,8 @@
+"""
+Reproduces Figure 21 (Section 5.2.2, "Lattice wrench"): the h-refinement
+study and the proposed method's error against it.
+"""
+
 import json
 import shutil
 

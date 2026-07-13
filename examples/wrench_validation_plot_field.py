@@ -5,6 +5,8 @@ PyVista grids in physical coordinates (point data: `uh`, `|u|`, `|u| [mm]`);
 `render_field` / `save_field_vtu` produce the figure / merged VTU. The module
 is import-safe (no argparse at import time) so refined drivers can reuse it.
 Serial only.
+
+Field rendering for Figure 20(a,b,c,d) (Section 5.2.2, "Lattice wrench").
 """
 
 import argparse

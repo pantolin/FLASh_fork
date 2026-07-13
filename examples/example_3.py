@@ -1,6 +1,8 @@
 """
 Simulates a porous wing section using BDDC as the solver and MDEIM ROM models for assembly.
 Highlights advanced solver and reduced-order modeling capabilities in FLASh.
+
+Reproduces Figure 19 (Section 5.2.1, "Sandwich wing").
 """
 
 import numpy as np

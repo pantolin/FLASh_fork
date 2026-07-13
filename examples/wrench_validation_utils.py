@@ -3,6 +3,9 @@
 QoIs: total compliance, consistent (residual-based) reactions on the Dirichlet
 boundary, stress-integrated reactions on the Dirichlet boundary, and the
 resultant of the applied Neumann traction (used as exact equilibrium reference).
+
+Supporting module for the Figure 20/21 drivers (Section 5.2.2, "Lattice
+wrench"): example_5.py, wrench_validation.py, wrench_refined.py.
 """
 
 from dataclasses import dataclass

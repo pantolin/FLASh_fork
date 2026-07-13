@@ -7,6 +7,9 @@ Two modes:
 - "lattice": each child is a full lattice cell with its own threshold corners
   (a k times finer lattice) -- reproduces the paper's dense wrench (k = 9).
 
+Supporting module for wrench_refined.py, used to reproduce Figure 20(c,d)
+and Figure 21 (Section 5.2.2, "Lattice wrench").
+
 The subdivided mesh duck-types WrenchCoarseMesh, so GlobalDofsManager and the
 QoI functions work unchanged; only the Subdomain construction loop is custom
 (each child needs its own level-set callable).

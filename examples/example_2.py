@@ -1,6 +1,8 @@
 """
 Demonstrates application of the FLASh method to a disc domain.
 Shows how to set up geometry, boundary conditions, and solve using the framework.
+
+General usage example; not tied to a specific paper figure.
 """
 
 import numpy as np

@@ -1,6 +1,9 @@
 """
 Tests the performance and scalability of the FLASh method on larger problems.
 Intended for benchmarking parallel efficiency and computational cost.
+
+Reproduces Figure 18 and the scalability statistics reported in Section 5.1.3,
+"Scalability of the method".
 """
 
 import resource

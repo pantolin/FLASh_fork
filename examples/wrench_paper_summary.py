@@ -5,6 +5,8 @@ wrench_refined.py; writes summary.txt / summary.csv / convergence figures.
 Load-dependent QoIs are also reported normalized by the applied load (the
 boundary-mass Neumann assembly makes the discrete load discretization-
 dependent).
+
+Aggregation stage for Figure 21 (Section 5.2.2, "Lattice wrench").
 """
 
 import csv

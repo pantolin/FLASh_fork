@@ -4,6 +4,10 @@ Solves the coarse wrench (90 subdomains) at a given basis degree, with or
 without the MDEIM ROM, and writes all QoIs to a JSON file. Run one process
 invocation per configuration (a class-level cache in `Subdomain` makes mixing
 degrees within one process unsafe).
+
+With --paper-field, reproduces the "star" point (proposed method) of
+Figure 21 and the QoIs quoted for the wrench in Section 5.2.2, "Lattice
+wrench".
 """
 
 import argparse

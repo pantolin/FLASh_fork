@@ -4,6 +4,9 @@ Mode "window" keeps the physical lattice identical for every k (h-refinement
 reference of the validation study); mode "lattice" makes each child a full
 lattice cell (the paper's dense wrench is k = 9). One process invocation per
 configuration.
+
+Reproduces Figure 20(c,d) (Section 5.2.2, dense wrench, mode "lattice") and
+the h-refinement curve of Figure 21 (mode "window").
 """
 
 import argparse

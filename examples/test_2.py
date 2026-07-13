@@ -1,6 +1,8 @@
 """
 Assesses convergence and error of the BDDC solver when using reduced-order models (ROM).
 Useful for validating ROM integration and solver robustness.
+
+Reproduces Figure 15 (Section 5.1.2, "Effect of the stabilization").
 """
 
 import numpy as np

@@ -1,6 +1,8 @@
 """
 Assesses convergence and error for different solver approximations in FLASh.
 Designed to test the effect of algorithmic choices on solution quality.
+
+Reproduces Figure 17 (Section 5.1.3, "Efficiency of the accelerations").
 """
 
 import numpy as np
