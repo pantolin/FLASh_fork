@@ -196,7 +196,7 @@ class Elasticity:
 
         return V
 
-    def assemble_stiffness(self, unf_domain: UnfittedDomain, basis: Callable, coefficients: Callable, full_cell: bool = False) -> np.ndarray:
+    def assemble_stiffness(self, unf_domain: UnfittedDomain, basis: Callable, coefficients: Callable, full_cell: bool = False, n_quad_pts: int = 8) -> np.ndarray:
         """Assemble the local stiffness matrix for an unfitted element.
 
         The assembly uses quadrature points produced either by QUGaR (for unfitted
@@ -214,14 +214,14 @@ class Elasticity:
         full_cell: bool, optional
             If True, use a full tensor-product quadrature on the reference square
             instead of the unfitted quadrature. Defaults to False.
+        n_quad_pts: int, optional
+            Number of quadrature points per direction. Defaults to 8.
 
         Returns
         -------
         np.ndarray
             The assembled stiffness matrix of shape (ndof, ndof).
         """
-
-        n_quad_pts = 8
 
         if full_cell:
             quad = make_unit_square_quadrature(n_quad_pts)
@@ -240,7 +240,7 @@ class Elasticity:
 
         return K
     
-    def assemble_mass(self, unf_domain: UnfittedDomain, basis: Callable, coefficients: Callable) -> np.ndarray:
+    def assemble_mass(self, unf_domain: UnfittedDomain, basis: Callable, coefficients: Callable, n_quad_pts: int = 8) -> np.ndarray:
         """Assemble the local mass matrix for an unfitted element.
 
         The mass matrix is computed using QUGaR quadrature and the provided
@@ -255,14 +255,14 @@ class Elasticity:
             Object providing an `evaluate` method returning basis function values.
         coefficients: Callable
             Function producing coefficient values at quadrature points.
+        n_quad_pts: int, optional
+            Number of quadrature points per direction. Defaults to 8.
 
         Returns
         -------
         np.ndarray
             The assembled mass matrix of shape (ndof, ndof).
         """
-
-        n_quad_pts = 8
 
         quad = qugar.cpp.create_quadrature(unf_domain, np.array([0]), n_quad_pts)
 
@@ -285,9 +285,8 @@ class Elasticity:
 
         return M
     
-    def assemble_boundary_mass(self, unf_domain: UnfittedDomain, basis: Callable, coefficients: Callable) -> np.ndarray:
-        
-        n_quad_pts = 8
+    def assemble_boundary_mass(self, unf_domain: UnfittedDomain, basis: Callable, coefficients: Callable, n_quad_pts: int = 8) -> np.ndarray:
+
         n_b = basis.get_total_number_basis()
 
         bM = np.zeros((n_b, n_b))
@@ -323,9 +322,8 @@ class Elasticity:
 
         return bM
     
-    def assemble_right_hand_side(self, unf_domain: UnfittedDomain, basis: Callable, coefficients: Callable, centers: list[np.ndarray]) -> np.ndarray:
+    def assemble_right_hand_side(self, unf_domain: UnfittedDomain, basis: Callable, coefficients: Callable, centers: list[np.ndarray], n_quad_pts: int = 8) -> np.ndarray:
 
-        n_quad_pts = 8
         cut_cells_quad = qugar.cpp.create_quadrature(unf_domain, np.array([0]), n_quad_pts)
 
         basis_vals = np.array(basis.evaluate(cut_cells_quad.points))

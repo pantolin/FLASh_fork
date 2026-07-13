@@ -1,10 +1,10 @@
 """
-Assesses convergence and error of the BDDC solver when using reduced-order models (ROM).
-Useful for validating ROM integration and solver robustness.
+Assesses the effect of fast assembly techniques on convergence and error.
+
+Reproduces Figure 13 (Section 5.1.2, "Accuracy of the fast assembly technique").
 """
 
 import numpy as np
-from pathlib import Path
 
 from FLASh.utils import Communicators
 
@@ -24,37 +24,13 @@ from FLASh.pde import (
 dtype = np.float64
 
 import h5py
-
-# Paths
 import os
-from _paths import RESULTS_DIR, ROM_DATA_DIR
+
+from _paths import RESULTS_DIR
 
 if __name__ == "__main__":         
 
     communicators = Communicators()
-
-    ### Load ROM models ###
-    
-    epsilon_min = 0.1
-    epsilon_max = 0.9
-
-    n_rom = 2
-    p_rom = 6
-    d_rom = 4
-
-    p0 = np.array([epsilon_min] * d_rom)
-    p1 = np.array([epsilon_max] * d_rom)
-
-    k_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    k_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core"))
-
-    m_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    m_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "M_core"))
-
-    bm_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    bm_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "bM_core"))
-
-    K_core_full = np.load(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core" / "full_array.npy"))
 
     ### Set geometry options ###
 
@@ -116,30 +92,16 @@ if __name__ == "__main__":
         nu = 0.25
     )
 
-    elasticity_pde_rom = Elasticity(
-        exterior_bc = exterior_bc,
-        source = source,
-        E = 5,
-        nu = 0.25,
-        K_model = k_core_model,
-        M_model = m_core_model,
-        bM_model = bm_core_model,
-        K_full_core = K_core_full
-    )
-
     ### Set options ###
 
-    stabilizations = [0.0, 1e-5, 1e-4, 5e-4, 1e-3, 1e-2]
-    stabilize = True
+    fa_degrees = [1, 2, 3, 4, 5]
 
     i_max = 10
 
-    stab_errors = np.empty((i_max-1, len(stabilizations)))
-    rom_errors = np.empty((i_max-1, len(stabilizations)))
-    total_errors = np.empty((i_max-1, len(stabilizations)))
+    errors = np.empty((i_max-1, len(fa_degrees)))
 
-    iterations = np.empty((i_max-1, len(stabilizations)))
-    rom_iterations = np.empty((i_max-1, len(stabilizations)))
+    iterations = np.empty((i_max-1))
+    fa_iterations = np.empty((i_max-1, len(fa_degrees)))
 
     for i in range(1, i_max):
 
@@ -179,19 +141,24 @@ if __name__ == "__main__":
         }
 
 
-        solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
-        solver.setup()
-        solver.solve()
+        baseline_solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
+        baseline_solver.setup()
+        baseline_solver.solve()
 
-        baseline_solution = solver.get_solution()
+        baseline_solution = baseline_solver.get_solution()
+        baseline_stats = baseline_solver.get_stats()
 
-        for idx, stabilization in enumerate(stabilizations):
+        iterations[i-1] = baseline_stats["iterations"][0]
+
+        for idx, degree in enumerate(fa_degrees):
 
             ### Set solver options ###
 
             sbdmn_opts = {
-                "stabilize" : stabilize,
-                "stabilization": stabilization,
+                "approximate_geometry" : True,
+                "approximate_geometry_degree": degree,
+                "stabilize" : False,
+                "stabilization": 0.0,
                 "assemble" : True
             }
 
@@ -203,62 +170,46 @@ if __name__ == "__main__":
                 "global_dofs_manager_opts": gdm_opts
             }
 
-            ### Solve with rom ###
-
-            solver = BDDC(geometry, elasticity_pde_rom, communicators, opts = opts)
-            solver.setup()
-            solver.solve()
-
-            rom_stats = solver.get_stats()
-            rom_solution = solver.get_solution()
-
-            ### Solve without rom ###
+            ### Solve with fa ###
 
             solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
             solver.setup()
             solver.solve()
 
-            no_rom_stats = solver.get_stats()
-            no_rom_solution = solver.get_solution()
+            fa_stats = solver.get_stats()
+            solution = solver.get_solution()
 
             ### Compare solutions ###
 
-            stab_error = solver.gbl_dofs_mngr.compute_error(no_rom_solution, baseline_solution)
-            rom_error = solver.gbl_dofs_mngr.compute_error(rom_solution, no_rom_solution)
-            total_error = solver.gbl_dofs_mngr.compute_error(rom_solution, baseline_solution)
+            error = baseline_solver.gbl_dofs_mngr.compute_error(solution, baseline_solution)
 
-            stab_errors[i-1, idx] = stab_error
-            rom_errors[i-1, idx] = rom_error
-            total_errors[i-1, idx] = total_error
+            errors[i-1, idx] = error
 
-            iterations[i-1, idx] = no_rom_stats["iterations"][0]
-            rom_iterations[i-1, idx] = rom_stats["iterations"][0]
+            fa_iterations[i-1, idx] = fa_stats["iterations"][0]
 
             if communicators.global_comm.Get_rank() == 0:
-                print(f"Errors: {stab_error}, {rom_error}, {total_error}.")    
+                print(f"Errors: {error}.")    
 
 
     if communicators.global_comm.Get_rank() == 0:
 
         number_of_subdomains = 8 * (np.arange(1, i_max) ** 2)
-        stabilizations = np.array(stabilizations)
+        fa_degrees = np.array(fa_degrees)
 
-        folder = os.path.join(RESULTS_DIR, "test_2")
-        os.makedirs(folder, exist_ok=True)
+        folder = RESULTS_DIR / "test_fast_assembly_accuracy"
+        folder.mkdir(parents=True, exist_ok=True)
 
-        file_path = os.path.join(folder, f"data.h5")
+        file_path = folder / "data.h5"
 
         with h5py.File(file_path, "w") as f:
 
             f.create_dataset("iterations", data=iterations)
-            f.create_dataset("rom_iterations", data=rom_iterations)
+            f.create_dataset("fa_iterations", data=fa_iterations)
 
-            f.create_dataset("stab_errors", data=stab_errors)
-            f.create_dataset("rom_errors", data=rom_errors)
-            f.create_dataset("total_errors", data=total_errors)
+            f.create_dataset("errors", data=errors)
 
             f.create_dataset("number_of_subdomains", data=number_of_subdomains)
-            f.create_dataset("stabilizations", data=stabilizations)
+            f.create_dataset("fa_degrees", data=fa_degrees)
 
         print(f"Saved to {file_path}")
 

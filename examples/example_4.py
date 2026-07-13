@@ -1,6 +1,8 @@
 """
 Test case: simulates a quarter-disc with one fixed side and a downward traction on the other.
 Used for validating solver accuracy and boundary condition handling.
+
+General usage example; not tied to a specific paper figure.
 """
 
 import numpy as np

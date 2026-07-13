@@ -97,13 +97,13 @@ Some examples have jupyter notebooks available like `examples/example_1.ipynb`
 Examples can be run either in serial 
 
 ```bash
-python examples/example_3.py
+python examples/example_wing.py
 ```
 
 or in parallel 
 
 ```bash
-mpirun -n 10 python examples/example_3.py
+mpirun -n 10 python examples/example_wing.py
 ```
 ---
 
