@@ -1,3 +1,7 @@
+"""
+Evaluates the impact of various approximations introduced in the FLASh method on solution error.
+"""
+
 import numpy as np
 from pathlib import Path
 

@@ -1,3 +1,8 @@
+"""
+Compares convergence rates between cutFEM and p-FEM elements.
+Useful for evaluating element technology choices in FLASh.
+"""
+
 from pathlib import Path
 
 from mpi4py import MPI

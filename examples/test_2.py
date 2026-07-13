@@ -1,3 +1,8 @@
+"""
+Assesses convergence and error of the BDDC solver when using reduced-order models (ROM).
+Useful for validating ROM integration and solver robustness.
+"""
+
 import numpy as np
 from pathlib import Path
 

@@ -1,3 +1,8 @@
+"""
+Simulates a wrench to test FLASh methods on a non-spline macro geometry.
+Useful for evaluating framework flexibility with complex, real-world shapes.
+"""
+
 import sys
 sys.stdout.isatty = lambda: True
 

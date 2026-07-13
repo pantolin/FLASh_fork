@@ -62,7 +62,7 @@ def create_RBF_interpolator(parameters, coefficients):
     if values.ndim == 1:
         values = values.reshape(-1,1)
 
-    interpolator = sp.interpolate.RBFInterpolator(points, values, kernel = "cubic")
+    interpolator = sp.interpolate.RBFInterpolator(points, values.T, kernel = "cubic")
 
     return interpolator
 

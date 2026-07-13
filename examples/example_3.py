@@ -1,3 +1,8 @@
+"""
+Simulates a porous wing section using BDDC as the solver and MDEIM ROM models for assembly.
+Highlights advanced solver and reduced-order modeling capabilities in FLASh.
+"""
+
 import numpy as np
 import splipy as sp
 from pathlib import Path
@@ -99,8 +104,6 @@ if __name__ == "__main__":
     
     geometry.coarse_mesh.set_parameter_field_from_function(parameter_function)
 
-    # GlobalDofsManager.plot(geometry, communicators)
-
     exterior_bc = [
         (
             0, 
@@ -147,7 +150,7 @@ if __name__ == "__main__":
 
     sbdmn_opts = {
         "stabilize" : True,
-        "stabilization": 1e-3,
+        "stabilization": 1e-4,
         "parametric_bc": True,
         "assemble" : True,
     }
@@ -162,12 +165,11 @@ if __name__ == "__main__":
         "global_dofs_manager_opts": gdm_opts
     }
 
-    # GlobalDofsManager.plot(geometry, communicators)
     solver = BDDC(geometry, elasticity_pde, communicators, opts = opts)
     solver.setup()
     solver.solve()
     solver.plot_solution()
-    # solver.write_solution(str(RESULTS_DIR / "wing_example"))
+    solver.write_solution(str(RESULTS_DIR / "wing_example"))
 
     
 

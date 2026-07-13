@@ -1,10 +1,12 @@
 # FLASh: Fast simulation tools for lattice structures
 
-This repository contains the code and data used for the paper "**Fast simulation tools for LAttice Structures**" (replace with the exact paper title and citation).
+This repository contains the code and data used for the paper:
 
-This code uses **[QUGaR](https://github.com/your-org/qugar)** to compute numerical quadratures and **FEniCS** for visualization of results.
+> G. Bonilla Moreno, G. Guarino, P. Antolin, "A ROM-based BDDC solver for unfitted p-FEM level-set-based lattice structures", arXiv preprint, 2026. [arXiv:2604.09113](https://arxiv.org/abs/2604.09113)
 
-> 📄 **Note:** Update the above line with the exact title, authors, and citation (DOI/arXiv) when ready.
+This code was developed by Gonzalo Bonilla Moreno during a stay at the MNS lab at EPFL (https://www.epfl.ch/labs/mns/) under the supervision of Pablo Antolin. The macro geometries for the wrench and wing examples were designed by Giuliano Guarino.
+
+This code uses **[QUGaR](https://github.com/pantolin/qugar)** to compute numerical quadratures and **[FEniCS](https://fenicsproject.org)** for visualization of results.
 
 ---
 

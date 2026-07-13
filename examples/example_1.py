@@ -1,3 +1,9 @@
+"""
+Solve the linear elasticity equation on a 3x3 grid of Schoen IWP cells.
+Boundary conditions: left side fixed, traction applied on the right.
+Demonstrates basic usage of the FLASh framework for periodic microstructures.
+"""
+
 import numpy as np
 
 from FLASh.utils import Communicators
@@ -116,8 +122,6 @@ if __name__ == "__main__":
     solver.setup()
     solver.solve()
     solver.plot_solution()
-    solver.write_solution(str(RESULTS_DIR / "wrench_examples"))    
-
 
 
 

@@ -1,3 +1,8 @@
+"""
+Assesses convergence and error for different solver approximations in FLASh.
+Designed to test the effect of algorithmic choices on solution quality.
+"""
+
 import numpy as np
 from pathlib import Path
 

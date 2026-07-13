@@ -1,3 +1,7 @@
+"""
+Assesses the effect of fast assembly techniques on convergence and error.
+"""
+
 import numpy as np
 
 from FLASh.utils import Communicators

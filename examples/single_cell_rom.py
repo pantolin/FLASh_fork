@@ -1,3 +1,9 @@
+"""
+Evaluates the accuracy of reduced-order modeling (ROM) for a single cell using FLASh.
+Compares errors between exact and ROM-based fast assembly tensors (with and without interpolation),
+computes stiffness ROM error, and solves a simple problem to assess ROM performance.
+"""
+
 import numpy as np
 from pathlib import Path
 
@@ -34,38 +40,20 @@ def compute_operator_error(A, B):
     error = np.linalg.norm(A-B)
     norm = np.linalg.norm(A)
 
-    print("Error: ", error, ". Relative error: ", error/norm, ".\n")
+    return error/norm
 
-if __name__ == "__main__":         
+def test_rom_model(
+        k_core_model: MDEIM,
+        m_core_model: MDEIM,
+        bm_core_model: MDEIM,
+        K_core_full: np.ndarray,
+        epsilon_min: float,
+        epsilon_max: float,
+        levelset,
+        total_samples = 20
+    ) -> None:
 
     communicators = Communicators()
-
-    ### Load ROM models ###
-    
-    epsilon_min = 0.1
-    epsilon_max = 0.9
-
-    n_rom = 2
-    p_rom = 6
-    d_rom = 4
-
-    p0 = np.array([epsilon_min] * d_rom)
-    p1 = np.array([epsilon_max] * d_rom)
-
-    k_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    k_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core"))
-
-    m_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    m_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "M_core"))
-
-    bm_core_model = MDEIM(n_rom, p_rom, p0, p1)
-    bm_core_model.set_up_from_files(str(ROM_DATA_DIR / "schwarz_diamond_3" / "bM_core"))
-
-    K_core_full = np.load(str(ROM_DATA_DIR / "schwarz_diamond_3" / "K_core" / "full_array.npy"))
-
-    K_core = k_core_model.evaluate(np.ones((1,4)))
-    M_core = m_core_model.evaluate(np.ones((1,4)))
-    bM_core = bm_core_model.evaluate(np.ones((1,4)))
 
     ### Create geometry ###
 
@@ -89,7 +77,7 @@ if __name__ == "__main__":
     geometry = SplineGeometry.interpolate_map(
         [knots_x, knots_y],
         map,
-        gyroid.SchwarzDiamond().make_function(),
+        levelset,
         geometry_opts
     )
 
@@ -117,7 +105,16 @@ if __name__ == "__main__":
     pts = geometry.coarse_mesh.get_cell_vertex_points(0)
     bezier_element = geometry.get_bezier_element(0)
 
-    for _ in range(100):
+    k_error = 0
+    m_error = 0
+    bm_error = 0
+
+    k_core_error = 0
+    no_int_k_core_error = 0
+
+    u_error = 0
+
+    for _ in range(total_samples):
 
         parameters = epsilon_min + (epsilon_max - epsilon_min) * np.random.rand(1, 4)
 
@@ -138,10 +135,14 @@ if __name__ == "__main__":
         K_rom = sbdmn.K
 
         M = sbdmn.assemble_M()
+        M_rom = sbdmn.M
+
+        bM = sbdmn.assemble_bM()
+        bM_rom = sbdmn.bM
 
         K_core = sbdmn.assemble_K_core()
 
-        idx = int(k_core_model.locate_point(np.squeeze(parameters)))
+        idx = int(k_core_model.locate_point(np.squeeze(parameters)).item())
         rom_basis = k_core_model._basis[idx]
 
         I = compute_magic_points(rom_basis)
@@ -153,49 +154,153 @@ if __name__ == "__main__":
         no_int_K_core_rom = compute_aproximations(rom_basis, coeffs).reshape(K_core.shape)
         K_core_rom = k_core_model.evaluate(parameters.reshape(1,4)).reshape(K_core.shape)
 
-        print(np.linalg.norm(K_core-K_core_rom)/np.linalg.norm(K_core))
-        print(np.linalg.norm(K_core-no_int_K_core_rom)/np.linalg.norm(K_core))
+        def compute_solution_error(A, B):
 
-    def compute_solution_error(A, B):
+            n = K.shape[0]
 
-        n = K.shape[0]
+            a_dofs = sbdmn.all_dofs
+            e_dofs = sbdmn.edges_dofs
 
-        a_dofs = sbdmn.all_dofs
-        e_dofs = sbdmn.edges_dofs
+            b1_dofs = e_dofs[0]
+            b2_dofs = e_dofs[3]
 
-        b1_dofs = e_dofs[0]
-        b2_dofs = e_dofs[3]
+            i_dofs = np.setdiff1d(a_dofs, np.union1d(b1_dofs, b2_dofs))
 
-        i_dofs = np.setdiff1d(a_dofs, np.union1d(b1_dofs, b2_dofs))
+            ub = np.zeros(n)
+            ub[b2_dofs] = -0.001
 
-        ub = np.zeros(n)
-        ub[b2_dofs] = -0.001
+            f = np.zeros(n)
+            f -= A @ ub
 
-        f = np.zeros(n)
-        f -= A @ ub
+            u = np.zeros(n)
+            u[i_dofs] = np.linalg.solve(A[i_dofs][:,i_dofs], f[i_dofs])
 
-        u = np.zeros(n)
-        u[i_dofs] = np.linalg.solve(A[i_dofs][:,i_dofs], f[i_dofs])
+            f_rom = np.zeros(n)
+            f_rom -= B @ ub
 
-        f_rom = np.zeros(n)
-        f_rom -= B @ ub
+            u_rom = np.zeros(n)
+            u_rom[i_dofs] = np.linalg.solve(B[i_dofs][:,i_dofs], f_rom[i_dofs])
 
-        u_rom = np.zeros(n)
-        u_rom[i_dofs] = np.linalg.solve(B[i_dofs][:,i_dofs], f_rom[i_dofs])
+            error = np.sqrt((u-u_rom).T @ M @ (u-u_rom))
+            norm = np.sqrt(u.T @ M @ u)
 
-        error = np.linalg.norm(u-u_rom)
-        norm = np.linalg.norm(u)
+            return error/norm
 
-        print("Error: ", error, ". Relative error: ", error/norm, ".")
+        k_error += compute_operator_error(K, K_rom)
+        m_error += compute_operator_error(M, M_rom)
+        bm_error += compute_operator_error(bM, bM_rom)
+        k_core_error += compute_operator_error(K_core, K_core_rom)
+        no_int_k_core_error += compute_operator_error(K_core, no_int_K_core_rom)
+        
+        
+        u_error += compute_solution_error(K, K_rom)
 
-        error = np.sqrt((u-u_rom).T @ M @ (u-u_rom))
-        norm = np.sqrt(u.T @ M @ u)
+    print(f"Average error of K: {k_error / total_samples}")
+    print(f"Average error of M: {m_error / total_samples}")
+    print(f"Average error of bM: {bm_error / total_samples}\n")
 
-        print("Error: ", error, ". Relative error: ", error/norm, ".\n")
+    print(f"Average error of K fast assembly tensor: {k_core_error / total_samples}")
+    print(f"Average error of K fast assembly tensor (w/o interpolation): {no_int_k_core_error / total_samples}\n")
 
-    compute_operator_error(K, K_rom)
-    compute_solution_error(K, K_rom)
+    print(f"Average error of a single cell problem:{u_error / total_samples}\n")
 
+if __name__ == "__main__":         
+
+    #####################
+    
+    rom_name = "schwarz_diamond_3"
+
+    epsilon_min = 0.1
+    epsilon_max = 0.9
+
+    n_rom = 2
+    p_rom = 6
+    d_rom = 4
+
+    p0 = np.array([epsilon_min] * d_rom)
+    p1 = np.array([epsilon_max] * d_rom)
+
+    k_core_model = MDEIM(n_rom, p_rom, p0, p1)
+    k_core_model.set_up_from_files(str(ROM_DATA_DIR / rom_name / "K_core"))
+
+    m_core_model = MDEIM(n_rom, p_rom, p0, p1)
+    m_core_model.set_up_from_files(str(ROM_DATA_DIR / rom_name / "M_core"))
+
+    bm_core_model = MDEIM(n_rom, p_rom, p0, p1)
+    bm_core_model.set_up_from_files(str(ROM_DATA_DIR / rom_name / "bM_core"))
+
+    K_core_full = np.load(str(ROM_DATA_DIR / rom_name / "K_core" / "full_array.npy"))
+
+    levelset = gyroid.SchwarzDiamond().make_function()
+
+    print(f"Test for rom model: {rom_name}.\n")
+
+    print(f"Rom parameters: ")
+    
+    print(f"Epsilon min: {epsilon_min}")
+    print(f"Epsilon max: {epsilon_max}")
+
+    print(f"Interpolation degree: {p_rom}")
+    print(f"Number of clusters: {n_rom ** d_rom}\n")
+    
+    test_rom_model(
+        k_core_model,
+        m_core_model,
+        bm_core_model,
+        K_core_full,
+        epsilon_min,
+        epsilon_max,
+        levelset,
+        total_samples=20
+    )
+
+    #####################
+    
+    rom_name = "schwarz_diamond_1"
+
+    epsilon_min = 0.1
+    epsilon_max = 0.9
+
+    n_rom = 1
+    p_rom = 4
+    d_rom = 4
+
+    p0 = np.array([epsilon_min] * d_rom)
+    p1 = np.array([epsilon_max] * d_rom)
+
+    k_core_model = MDEIM(n_rom, p_rom, p0, p1)
+    k_core_model.set_up_from_files(str(ROM_DATA_DIR / rom_name / "K_core"))
+
+    m_core_model = MDEIM(n_rom, p_rom, p0, p1)
+    m_core_model.set_up_from_files(str(ROM_DATA_DIR / rom_name / "M_core"))
+
+    bm_core_model = MDEIM(n_rom, p_rom, p0, p1)
+    bm_core_model.set_up_from_files(str(ROM_DATA_DIR / rom_name / "bM_core"))
+
+    K_core_full = np.load(str(ROM_DATA_DIR / rom_name / "K_core" / "full_array.npy"))
+
+    levelset = gyroid.SchwarzDiamond().make_function()
+
+    print(f"Test for rom model: {rom_name}.\n")
+
+    print(f"Rom parameters: ")
+    
+    print(f"Epsilon min: {epsilon_min}")
+    print(f"Epsilon max: {epsilon_max}")
+
+    print(f"Interpolation degree: {p_rom}")
+    print(f"Number of clusters: {n_rom ** d_rom}\n")
+
+    test_rom_model(
+        k_core_model,
+        m_core_model,
+        bm_core_model,
+        K_core_full,
+        epsilon_min,
+        epsilon_max,
+        levelset,
+        total_samples=20
+    )
 
 
 
