@@ -1,9 +1,38 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+import os
+import shutil
 import h5py
-
 from _paths import FIGS_DIR, RESULTS_DIR, ROM_DATA_DIR
+
+
+# Use LaTeX text rendering when a TeX installation is available; otherwise
+# fall back to matplotlib's mathtext with the Computer Modern font set.
+USETEX = shutil.which("latex") is not None
+
+plt.rcParams.update({
+"text.usetex": USETEX,
+"text.latex.preamble": r"\usepackage{amsfonts}",
+"font.family": "serif",
+"font.size": 24,
+"legend.fontsize": 12,
+"xtick.labelsize": 18,
+"ytick.labelsize": 18,
+"lines.markersize": 10
+})
+if USETEX:
+    plt.rcParams["font.serif"] = ["Computer Modern Roman"]
+else:
+    plt.rcParams["mathtext.fontset"] = "cm"
+
+# LaTeX needs the ampersand escaped; mathtext must NOT escape it.
+AMP = r"\&" if USETEX else "&"
+markers = ['o', 's', '^', 'd', 'v', 'p', '*', 'h', 'x']
+colors  = plt.rcParams['axes.prop_cycle'].by_key()['color']
+FIGS_DIR.mkdir(exist_ok=True, parents=True)
+
+
+
 
 # --- Plot results from test_1.py ---
 def plot_test_1():
@@ -19,64 +48,167 @@ def plot_test_1():
         pcg_solve_time = f["pcg_solve_time"][:]
         cholesky_solve_time = f["cholesky_solve_time"][:]
         number_of_subdomains = f["number_of_subdomains"][:]
-    
-    fig, axs = plt.subplots(2, 2, figsize=(16, 8))
 
-    # Iterations
-    axs[0, 0].plot(number_of_subdomains, bddc_iters, label="BDDC", marker='o')
-    axs[0, 0].plot(number_of_subdomains, pcg_iters, label="PCG", marker='s')
-    axs[0, 0].set_xlabel("Number of subdomains")
-    axs[0, 0].set_ylabel("Iterations")
-    axs[0, 0].set_title("Solver Iterations vs Subdomains")
-    axs[0, 0].legend()
-    axs[0, 0].grid(True)
-    axs[0, 0].set_yscale('log')
-
-    # Setup time
-    axs[0, 1].plot(number_of_subdomains, bddc_setup_time, label="BDDC", marker='o')
-    axs[0, 1].plot(number_of_subdomains, pcg_setup_time, label="PCG", marker='s')
-    axs[0, 1].plot(number_of_subdomains, cholesky_setup_time, label="Cholesky", marker='^')
-    axs[0, 1].set_xlabel("Number of subdomains")
-    axs[0, 1].set_ylabel("Setup Time (s)")
-    axs[0, 1].set_title("Setup Time vs Subdomains")
-    axs[0, 1].legend()
-    axs[0, 1].grid(True)
-    axs[0, 1].set_yscale('log')
-
-    # Solve time
-    axs[1, 0].plot(number_of_subdomains, bddc_solve_time, label="BDDC", marker='o')
-    axs[1, 0].plot(number_of_subdomains, pcg_solve_time, label="PCG", marker='s')
-    axs[1, 0].plot(number_of_subdomains, cholesky_solve_time, label="Cholesky", marker='^')
-    axs[1, 0].set_xlabel("Number of subdomains")
-    axs[1, 0].set_ylabel("Solve Time (s)")
-    axs[1, 0].set_title("Solve Time vs Subdomains")
-    axs[1, 0].legend()
-    axs[1, 0].grid(True)
-    axs[1, 0].set_yscale('log')
-
-    # Total time (setup + solve)
-    bddc_total = bddc_setup_time + bddc_solve_time
-    pcg_total = pcg_setup_time + pcg_solve_time
-    cholesky_total = cholesky_setup_time + cholesky_solve_time
-    axs[1, 1].plot(number_of_subdomains, bddc_total, label="BDDC", marker='o')
-    axs[1, 1].plot(number_of_subdomains, pcg_total, label="PCG", marker='s')
-    axs[1, 1].plot(number_of_subdomains, cholesky_total, label="Cholesky", marker='^')
-    axs[1, 1].set_xlabel("Number of subdomains")
-    axs[1, 1].set_ylabel("Total Time (s)")
-    axs[1, 1].set_title("Total Time vs Subdomains")
-    axs[1, 1].legend()
-    axs[1, 1].grid(True)
-    axs[1, 1].set_yscale('log')
-
+    # Figure 1: Iterations
+    fig,ax=plt.subplots(figsize=(8,6))
+    ax.plot(number_of_subdomains,bddc_iters,marker='o',label="BDDC")
+    ax.plot(number_of_subdomains,pcg_iters,marker='s',label="PCG")
+    ax.set_xlabel("Number of subdomains")
+    ax.set_ylabel("Iterations")
+    ax.set_xlim(0,700)
+    ax.grid(True)
+    ax.set_yscale('log')
     plt.tight_layout()
-    plt.suptitle("Test 1: Solver Performance vs Subdomains", y=1.04)
-    FIGS_DIR.mkdir(exist_ok=True, parents=True)
-    plt.savefig(str(FIGS_DIR / "test_1_results.pdf"), bbox_inches='tight')
+    plt.savefig(str(FIGS_DIR / "test_1_a_results.pdf"),bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+    # Figure 2: Setup time
+    fig,ax=plt.subplots(figsize=(8,6))
+    ax.plot(number_of_subdomains,bddc_setup_time,marker='o')
+    ax.plot(number_of_subdomains,pcg_setup_time,marker='s')
+    ax.plot(number_of_subdomains,cholesky_setup_time,marker='^')
+    ax.set_xlabel("Number of subdomains")
+    ax.set_ylabel("Setup Time $(s)$")
+    ax.set_xlim(0,700)
+    ax.set_ylim(1e-3,1e2)
+    ax.grid(True)
+    ax.set_yscale('log')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_1_b_results.pdf"),bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+    # Figure 3: Solve time
+    fig,ax=plt.subplots(figsize=(8,6))
+    ax.plot(number_of_subdomains,bddc_solve_time,marker='o')
+    ax.plot(number_of_subdomains,pcg_solve_time,marker='s')
+    ax.plot(number_of_subdomains,cholesky_solve_time,marker='^')
+    ax.set_xlabel("Number of subdomains")
+    ax.set_ylabel("Solve Time $(s)$")
+    ax.set_xlim(0,700)
+    ax.set_ylim(1e-3,1e2)
+    ax.grid(True)
+    ax.set_yscale('log')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_1_c_results.pdf"),bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+    # Figure 4: Total time
+    bddc_total=bddc_setup_time+bddc_solve_time
+    pcg_total=pcg_setup_time+pcg_solve_time
+    cholesky_total=cholesky_setup_time+cholesky_solve_time
+    fig,ax=plt.subplots(figsize=(8,6))
+    l1,=ax.plot(number_of_subdomains,bddc_total,marker='o')
+    l2,=ax.plot(number_of_subdomains,pcg_total,marker='s')
+    l3,=ax.plot(number_of_subdomains,cholesky_total,marker='^')
+    ax.set_xlabel("Number of subdomains")
+    ax.set_ylabel("Total Time $(s)$")
+    ax.set_xlim(0,700)
+    ax.set_ylim(1e-3,1e2)
+    ax.grid(True)
+    ax.set_yscale('log')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_1_d_results.pdf"),bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+    # Single horizontal legend
+    fig_legend=plt.figure(figsize=(6,0.5))
+    fig_legend.legend([l1,l2,l3],["BDDC","PCG","Cholesky"],loc="center",ncol=3,frameon=False)
+    plt.savefig(str(FIGS_DIR / "test_1_legend.pdf"),bbox_inches="tight", pad_inches=0)
+    plt.close()
+
+# --- Plot results from test_1_bis.py (adds algebraic multigrid) ---
+def plot_test_1_bis():
+
+    file_path = RESULTS_DIR / "test_1_bis" / "data.h5"
+    with h5py.File(file_path, "r") as f:
+        bddc_iters = f["bddc_iters"][:]
+        amg_iters = f["amg_iters"][:]
+        gamg_iters = f["gamg_iters"][:]
+        bddc_setup_time = f["bddc_setup_time"][:]
+        amg_setup_time = f["amg_setup_time"][:]
+        gamg_setup_time = f["gamg_setup_time"][:]
+        cholesky_setup_time = f["cholesky_setup_time"][:]
+        bddc_solve_time = f["bddc_solve_time"][:]
+        amg_solve_time = f["amg_solve_time"][:]
+        gamg_solve_time = f["gamg_solve_time"][:]
+        cholesky_solve_time = f["cholesky_solve_time"][:]
+        number_of_subdomains = f["number_of_subdomains"][:]
+
+    # Figure 1: Iterations
+    fig,ax=plt.subplots(figsize=(8,6))
+    ax.plot(number_of_subdomains,bddc_iters,marker='o',label="BDDC")
+    ax.plot(number_of_subdomains,amg_iters,marker='s',label="SOR")
+    ax.plot(number_of_subdomains,gamg_iters,marker='v',label="AMG")
+    ax.set_xlabel("Number of subdomains")
+    ax.set_ylabel("Iterations")
+    ax.set_xlim(0,700)
+    ax.grid(True)
+    ax.set_yscale('log')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_1_a_results.pdf"),bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+    # Figure 2: Setup time
+    fig,ax=plt.subplots(figsize=(8,6))
+    ax.plot(number_of_subdomains,bddc_setup_time,marker='o')
+    ax.plot(number_of_subdomains,amg_setup_time,marker='s')
+    ax.plot(number_of_subdomains,gamg_setup_time,marker='v')
+    ax.plot(number_of_subdomains,cholesky_setup_time,marker='^')
+    ax.set_xlabel("Number of subdomains")
+    ax.set_ylabel("Setup Time $(s)$")
+    ax.set_xlim(0,700)
+    ax.set_ylim(1e-3,1e2)
+    ax.grid(True)
+    ax.set_yscale('log')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_1_b_results.pdf"),bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+    # Figure 3: Solve time
+    fig,ax=plt.subplots(figsize=(8,6))
+    ax.plot(number_of_subdomains,bddc_solve_time,marker='o')
+    ax.plot(number_of_subdomains,amg_solve_time,marker='s')
+    ax.plot(number_of_subdomains,gamg_solve_time,marker='v')
+    ax.plot(number_of_subdomains,cholesky_solve_time,marker='^')
+    ax.set_xlabel("Number of subdomains")
+    ax.set_ylabel("Solve Time $(s)$")
+    ax.set_xlim(0,700)
+    ax.set_ylim(1e-3,1e2)
+    ax.grid(True)
+    ax.set_yscale('log')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_1_c_results.pdf"),bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+    # Figure 4: Total time
+    bddc_total=bddc_setup_time+bddc_solve_time
+    amg_total=amg_setup_time+amg_solve_time
+    gamg_total=gamg_setup_time+gamg_solve_time
+    cholesky_total=cholesky_setup_time+cholesky_solve_time
+    fig,ax=plt.subplots(figsize=(8,6))
+    l1,=ax.plot(number_of_subdomains,bddc_total,marker='o')
+    l2,=ax.plot(number_of_subdomains,amg_total,marker='s')
+    l4,=ax.plot(number_of_subdomains,gamg_total,marker='v')
+    l3,=ax.plot(number_of_subdomains,cholesky_total,marker='^')
+    ax.set_xlabel("Number of subdomains")
+    ax.set_ylabel("Total Time $(s)$")
+    ax.set_xlim(0,700)
+    ax.set_ylim(1e-3,1e2)
+    ax.grid(True)
+    ax.set_yscale('log')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_1_d_results.pdf"),bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+    # Single horizontal legend
+    fig_legend=plt.figure(figsize=(8,0.5))
+    fig_legend.legend([l1,l2,l4,l3],["BDDC","SOR","AMG","Cholesky"],loc="center",ncol=4,frameon=False)
+    plt.savefig(str(FIGS_DIR / "test_1_legend.pdf"),bbox_inches="tight", pad_inches=0)
     plt.close()
 
 # --- Plot results from test_2.py ---
 def plot_test_2():
-	
+
     file_path = RESULTS_DIR / "test_2" / "data.h5"
     with h5py.File(file_path, "r") as f:
         iterations = f["iterations"][:]
@@ -86,60 +218,87 @@ def plot_test_2():
         total_errors = f["total_errors"][:]
         number_of_subdomains = f["number_of_subdomains"][:]
         stabilizations = f["stabilizations"][:]
-        
-    fig, axs = plt.subplots(2, 2, figsize=(16, 10))
 
-	# Iterations subplot
+    def format_stab_label(stab_value, name="stab"):
+        if stab_value == 0:
+            return r"$\rho=0$"
+        exponent = int(f"{stab_value:e}".split('e')[1])
+        mantissa = stab_value / (10**exponent)
+        return fr"$\rho={mantissa:.0f} \cdot 10^{{{exponent}}}$"
+
+    # Figure 1: Iterations
+    fig, ax = plt.subplots(figsize=(8, 6))
     for idx, stab in enumerate(stabilizations):
-        axs[0, 0].plot(number_of_subdomains, iterations[:, idx], label=f"stab={stab:.1e}", marker='o')
-        axs[0, 0].plot(number_of_subdomains, rom_iterations[:, idx], label=f"ROM stab={stab:.1e}", marker='s', linestyle='--')
-        
-    axs[0, 0].set_xlabel("Number of subdomains")
-    axs[0, 0].set_ylabel("Iterations")
-    axs[0, 0].set_title("Iterations vs Subdomains")
-    axs[0, 0].legend(fontsize=8, ncol=2)
-    axs[0, 0].grid(True)
-    axs[0, 0].set_yscale('log')
-
-    # ROM error subplot
-    for idx, stab in enumerate(stabilizations):
-        axs[0, 1].plot(number_of_subdomains, rom_errors[:, idx], label=f"stab={stab:.1e}", marker='s')
-        
-    axs[0, 1].set_xlabel("Number of subdomains")
-    axs[0, 1].set_ylabel("ROM Error")
-    axs[0, 1].set_title("ROM Error vs Subdomains")
-    axs[0, 1].legend(fontsize=8)
-    axs[0, 1].grid(True)
-    axs[0, 1].set_yscale('log')
-
-    # Stab error subplot
-    for idx, stab in enumerate(stabilizations):
-        axs[1, 0].plot(number_of_subdomains, stab_errors[:, idx], label=f"stab={stab:.1e}", marker='o')
-        
-    axs[1, 0].set_xlabel("Number of subdomains")
-    axs[1, 0].set_ylabel("Stabilization Error")
-    axs[1, 0].set_title("Stabilization Error vs Subdomains")
-    axs[1, 0].legend(fontsize=8)
-    axs[1, 0].grid(True)
-    axs[1, 0].set_yscale('log')
-
-    # Total error subplot
-    for idx, stab in enumerate(stabilizations):
-        axs[1, 1].plot(number_of_subdomains, total_errors[:, idx], label=f"stab={stab:.1e}", marker='^')
-        
-    axs[1, 1].set_xlabel("Number of subdomains")
-    axs[1, 1].set_ylabel("Total Error")
-    axs[1, 1].set_title("Total Error vs Subdomains")
-    axs[1, 1].legend(fontsize=8)
-    axs[1, 1].grid(True)
-    axs[1, 1].set_yscale('log')
-
+        ax.plot(number_of_subdomains,     iterations[:, idx], color=colors[idx], marker=markers[idx], mfc='none', label=format_stab_label(stab), linestyle='-')
+        ax.plot(number_of_subdomains, rom_iterations[:, idx], color=colors[idx], marker=markers[idx], mfc='none', label=format_stab_label(stab) + f" ROM ", linestyle='--')
+    ax.set_xlabel("Number of subdomains")
+    ax.set_xlim(0,700)
+    ax.set_ylabel("Iterations")
+    ax.grid(True)
     plt.tight_layout()
-    plt.suptitle("Test 2: Error and Iteration Analysis (lines: stabilization values)", y=1.04)
-    FIGS_DIR.mkdir(exist_ok=True, parents=True)
-    plt.savefig(str(FIGS_DIR / "test_2_results.pdf"), bbox_inches='tight')
+    plt.savefig(str(FIGS_DIR / "test_2_a_results.pdf"), bbox_inches='tight', pad_inches=0.05)
     plt.close()
-	
+
+    # Figure 2: Stabilization Error
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for idx, stab in enumerate(stabilizations[1:], start=1):
+        ax.plot(number_of_subdomains, stab_errors[:, idx], color=colors[idx], marker=markers[idx], mfc='none', label=format_stab_label(stab), linestyle='-')
+    ax.set_xlabel("Number of subdomains")
+    ax.set_xlim(0,700)
+    ax.set_ylabel("$L^2$ error")
+    ax.grid(True)
+    ax.set_yscale('log')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_2_b_results.pdf"), bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+    # Figure 3: ROM error
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for idx, stab in enumerate(stabilizations):
+        ax.plot(number_of_subdomains, rom_errors[:, idx], color=colors[idx], marker=markers[idx], mfc='none', label=format_stab_label(stab)+ f" ROM ", linestyle='--')
+    ax.set_xlabel("Number of subdomains")
+    ax.set_xlim(0,700)
+    ax.set_ylabel("$L^2$ error")
+    ax.grid(True)
+    ax.set_yscale('log')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_2_c_results.pdf"), bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+    # Figure 4: Total Error
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for idx, stab in enumerate(stabilizations):
+        ax.plot(number_of_subdomains, total_errors[:, idx], color=colors[idx], marker=markers[idx], mfc='none', label=format_stab_label(stab)+ f" ROM ", linestyle='--')
+    ax.set_xlabel("Number of subdomains")
+    ax.set_xlim(0,700)
+    ax.set_ylabel("$L^2$ error")
+    ax.grid(True)
+    ax.set_yscale('log')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_2_d_results.pdf"), bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+    # Figure: legend a
+    fig, ax = plt.subplots(figsize=(8, 1))
+    for idx, stab in enumerate(stabilizations):
+        ax.plot([], [], color=colors[idx], marker=markers[idx], mfc='none', label=format_stab_label(stab))
+    legend = fig.legend(loc='center', frameon=False, ncol=len(stabilizations))
+    ax.axis('off')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_2_legend_a.pdf"), bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
+
+    # Figure: legend b
+    fig, ax  = plt.subplots(figsize=(6, 1))
+    ax.plot([], [], color='none',  linestyle='None', label='Linestyle:')
+    ax.plot([], [], color='black', linewidth=1, linestyle='-',  label='only stabilization')
+    ax.plot([], [], color='black', linewidth=1, linestyle='--', label='stabilization and ROM')
+    legend = fig.legend(loc='center', frameon=False, ncol=5)
+    ax.axis('off')
+    plt.tight_layout()
+    #plt.savefig("figs/test_2_legend_b.pdf", bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
+
 # --- Plot results from test_3.py ---
 def plot_test_3():
     file_path = RESULTS_DIR / "test_3" / "data.h5"
@@ -212,53 +371,32 @@ def plot_test_4():
         bas_solve_time = f["bas_solve_time"][:]
         romws_solve_time = f["romws_solve_time"][:]
 
-    fig, axs = plt.subplots(2, 2, figsize=(14, 10))
-
-    # Subplot 1: All error curves
-    axs[0, 0].plot(number_of_subdomains, errors_bas_vs_basws, marker='o', label="Baseline vs Baseline+WS")
-    axs[0, 0].plot(number_of_subdomains, errors_baws_vs_faws, marker='s', label="BAWS vs FAWS")
-    axs[0, 0].plot(number_of_subdomains, errors_faws_vs_romws, marker='^', label="FAWS vs ROMWS")
-    axs[0, 0].plot(number_of_subdomains, errors_bas_vs_romws, marker='d', label="Baseline vs ROM+WS")
-    axs[0, 0].set_xlabel("Number of subdomains")
-    axs[0, 0].set_ylabel("Error")
-    axs[0, 0].set_title("Error Curves")
-    axs[0, 0].set_yscale('log')
-    axs[0, 0].grid(True)
-    axs[0, 0].legend()
-
-    # Subplot 2: Iterations
-    axs[0, 1].plot(number_of_subdomains, bas_iters, marker='o', label="Baseline")
-    axs[0, 1].plot(number_of_subdomains, basws_iters, marker='s', label="Baseline+WS")
-    axs[0, 1].plot(number_of_subdomains, faws_iters, marker='^', label="FA+WS")
-    axs[0, 1].plot(number_of_subdomains, romws_iters, marker='d', label="ROM+WS")
-    axs[0, 1].set_xlabel("Number of subdomains")
-    axs[0, 1].set_ylabel("Iterations")
-    axs[0, 1].set_title("Iterations")
-    axs[0, 1].grid(True)
-    axs[0, 1].legend()
-
-    # Subplot 3: Total solve time (setup + solve)
-    axs[1, 0].plot(number_of_subdomains, bas_setup_time + bas_solve_time, marker='o', label="Baseline")
-    axs[1, 0].plot(number_of_subdomains, romws_setup_time + romws_solve_time, marker='d', label="ROM+WS")
-    axs[1, 0].set_xlabel("Number of subdomains")
-    axs[1, 0].set_ylabel("Setup Solve Time (s)")
-    axs[1, 0].set_title("Setup Solve Time")
-    axs[1, 0].grid(True)
-    axs[1, 0].legend()
-
-    # Subplot 4: Total solve time (setup + solve)
-    axs[1, 1].plot(number_of_subdomains, bas_setup_time + bas_assemble_time + bas_solve_time, marker='o', label="Baseline")
-    axs[1, 1].plot(number_of_subdomains, romws_setup_time + romws_assemble_time + romws_solve_time, marker='d', label="ROM+WS")
-    axs[1, 1].set_xlabel("Number of subdomains")
-    axs[1, 1].set_ylabel("Total Solve Time (s)")
-    axs[1, 1].set_title("Total Solve Time")
-    axs[1, 1].grid(True)
-    axs[1, 1].legend()
-
+    # Figure 1: Iterations
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot(number_of_subdomains, bas_iters  , color=colors[0], marker=markers[0], mfc='none', label="Baseline")
+    ax.plot(number_of_subdomains, romws_iters, color=colors[2], marker=markers[2], mfc='none', label=f"ROM {AMP} stabilization")
+    ax.set_xlabel("Number of subdomains")
+    ax.set_ylabel("Iterations")
+    ax.set_xlim(0,700)
+    ax.grid(True)
+    ax.legend()
     plt.tight_layout()
-    plt.suptitle("Test 4: Error, Iteration, and Solve Time Analysis", y=1.04)
-    FIGS_DIR.mkdir(exist_ok=True, parents=True)
-    plt.savefig(str(FIGS_DIR / "test_4_results.pdf"), bbox_inches='tight')
+    plt.savefig(str(FIGS_DIR / "test_4_a_results.pdf"), bbox_inches='tight', pad_inches=0.00)
+    plt.close()
+
+    # Figure 2: Time
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot(number_of_subdomains, bas_setup_time + bas_assemble_time, marker=markers[0], mfc=colors[0], color=colors[0], label="Baseline, setup and assemble")
+    ax.plot(number_of_subdomains, bas_setup_time + bas_assemble_time + bas_solve_time, marker=markers[0], mfc='none', color=colors[0], linestyle='--', label="Baseline, total")
+    ax.plot(number_of_subdomains, romws_setup_time + romws_assemble_time, marker=markers[2], mfc=colors[2], color=colors[2], label=f"ROM {AMP} stabilization, setup and assemble")
+    ax.plot(number_of_subdomains, romws_setup_time + romws_assemble_time + romws_solve_time, marker=markers[2], mfc='none', color=colors[2], linestyle='--', label=f"ROM {AMP} stabilization, total")
+    ax.set_xlabel("Number of subdomains")
+    ax.set_ylabel("Time $(s)$")
+    ax.set_xlim(0,700)
+    ax.grid(True)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_4_b_results.pdf"), bbox_inches='tight', pad_inches=0.00)
     plt.close()
 
 # --- Plot results from test_5.py ---
@@ -271,32 +409,29 @@ def plot_test_5():
         assemble_time = f["assemble_time"][:]
         solve_time = f["solve_time"][:]
 
-    fig, axs = plt.subplots(1, 2, figsize=(18, 6))
-
-    # Subplot 1: Iterations
-    axs[0].plot(number_of_subdomains, iters, marker='o', label="Iterations")
-    axs[0].set_xlabel("Number of subdomains")
-    axs[0].set_ylabel("Iterations")
-    axs[0].set_title("Iterations")
-    axs[0].grid(True)
-    axs[0].legend()
-
-    # Subplot 2: Setup and Assemble Time
-    axs[1].plot(number_of_subdomains, setup_time, marker='s', label="Setup Time")
-    axs[1].plot(number_of_subdomains, assemble_time, marker='^', label="Assemble Time")
-    axs[1].plot(number_of_subdomains, solve_time, marker='d', label="Solve Time")
-    axs[1].plot(number_of_subdomains, setup_time+assemble_time+solve_time, marker='o', label="Total Time")
-    axs[1].set_xlabel("Number of subdomains")
-    axs[1].set_ylabel("Time (s)")
-    axs[1].set_title("Solve Time")
-    axs[1].set_yscale('log')
-    axs[1].grid(True)
-    axs[1].legend()
-
+    # Figure 1: Iterations
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot(number_of_subdomains, iters, marker='o', label="Iterations")
+    ax.set_xlabel("Number of subdomains")
+    ax.set_ylabel("Iterations")
+    ax.grid(True)
     plt.tight_layout()
-    plt.suptitle("Test 5: Iteration and Timing Analysis", y=1.04)
-    FIGS_DIR.mkdir(exist_ok=True, parents=True)
-    plt.savefig(str(FIGS_DIR / "test_5_results.pdf"), bbox_inches='tight')
+    plt.savefig(str(FIGS_DIR / "test_5_a_results.pdf"), bbox_inches='tight', pad_inches=0.05)
+    plt.close()
+
+    # Figure 2: Setup, Assemble, Solve, and Total Time
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.plot(number_of_subdomains, setup_time+assemble_time+solve_time, marker=markers[0], label="Total time")
+    ax.plot(number_of_subdomains, setup_time, marker=markers[1], label="Assemble time")
+    ax.plot(number_of_subdomains, assemble_time, marker=markers[2], label="Setup time")
+    ax.plot(number_of_subdomains, solve_time, marker=markers[3], label="Solve time")
+    ax.set_xlabel("Number of subdomains")
+    ax.set_ylabel("Time $(s)$")
+    #ax.set_yscale('log')
+    ax.grid(True)
+    ax.legend(loc='upper left')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_5_b_results.pdf"), bbox_inches='tight', pad_inches=0.05)
     plt.close()
 
 # --- Plot results from test_6.py ---
@@ -309,33 +444,45 @@ def plot_test_6():
         iterations = f["iterations"][:]
         fa_iterations = f["fa_iterations"][:]
 
-    fig, axs = plt.subplots(1, 2, figsize=(16, 6))
+    fa_degrees = fa_degrees[0:-1]
 
     # Subplot 1: Error vs. Number of subdomains for each fa_degree
+    fig, ax = plt.subplots(figsize=(7, 6))
     for idx, degree in enumerate(fa_degrees):
-        axs[0].plot(number_of_subdomains, errors[:, idx], marker='o', label=f"FA degree={int(degree)}")
-    axs[0].set_xlabel("Number of subdomains")
-    axs[0].set_ylabel("Error")
-    axs[0].set_title("Error vs Subdomains (by FA degree)")
-    axs[0].set_yscale('log')
-    axs[0].grid(True)
-    axs[0].legend()
+        ax.plot(number_of_subdomains, errors[:, idx], marker=markers[idx], mfc='none', color=colors[idx], label=f"$p={int(degree)}$")
+    ax.set_xlabel("Number of subdomains")
+    ax.set_xlim(0,700)
+    ax.set_ylabel("$L^2$ Error")
+    ax.set_yscale('log')
+    ax.grid(True)
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_6_a_results.pdf"), bbox_inches='tight', pad_inches=0.1)
+    plt.close(fig)
 
     # Subplot 2: Iterations vs. Number of subdomains for baseline and each fa_degree
-    axs[1].plot(number_of_subdomains, iterations, marker='o', label="Baseline")
+    fig, ax = plt.subplots(figsize=(7, 6))
     for idx, degree in enumerate(fa_degrees):
-        axs[1].plot(number_of_subdomains, fa_iterations[:, idx], marker='s', label=f"FA degree={int(degree)}")
-    axs[1].set_xlabel("Number of subdomains")
-    axs[1].set_ylabel("Iterations")
-    axs[1].set_title("Iterations vs Subdomains (by FA degree)")
-    axs[1].grid(True)
-    axs[1].legend()
-
+        ax.plot(number_of_subdomains, fa_iterations[:, idx],  marker=markers[idx], mfc='none',  color=colors[idx], label=f"$p={int(degree)}$")
+    ax.plot(number_of_subdomains, iterations, linewidth=3, marker='', linestyle='--', color=colors[-1], label="Baseline")
+    ax.set_xlabel("Number of subdomains")
+    ax.set_xlim(0,700)
+    ax.set_ylabel("Number of iterations")
+    ax.grid(True)
     plt.tight_layout()
-    plt.suptitle("Test 6: Error and Iteration Analysis", y=1.04)
-    FIGS_DIR.mkdir(exist_ok=True, parents=True)
-    plt.savefig(str(FIGS_DIR / "test_6_results.pdf"), bbox_inches='tight')
-    plt.close()
+    plt.savefig(str(FIGS_DIR / "test_6_b_results.pdf"), bbox_inches='tight', pad_inches=0.1)
+    plt.close(fig)
+
+    # Legend
+    fig, ax = plt.subplots(figsize=(6, 1))
+    ax.plot([], [], linewidth=3, marker='', linestyle='--', color=colors[-1], label="Baseline")
+    for idx, degree in enumerate(fa_degrees):
+        ax.plot([], [],  marker=markers[idx], mfc='none',  color=colors[idx], label=f"$p={int(degree)}$")
+    legend = fig.legend(loc='center', frameon=False, ncol=len(fa_degrees)+1)
+    ax.axis('off')
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "test_6_legend.pdf"), bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
+
 
 # --- Plot results from rom_basis_test.py ---
 def plot_rom_basis_test():
@@ -345,74 +492,164 @@ def plot_rom_basis_test():
     """
     import os
 
-    paths = {
-        "ℙ¹ (Schwarz Diamond)": ROM_DATA_DIR / "schwarz_diamond_3" / "K_core" / "error_data.h5",
-        "ℙ² (Schwarz Diamond)": ROM_DATA_DIR / "schwarz_diamond_4" / "K_core" / "error_data.h5",
-    }
-
+    # Subplot 1: Schwarz Diamond
+    paths = {"P1 (Schwarz Diamond)": ROM_DATA_DIR / "schwarz_diamond_3" / "K_core" / "error_data.h5",
+             "P2 (Schwarz Diamond)": ROM_DATA_DIR / "schwarz_diamond_4" / "K_core" / "error_data.h5",}
     fig, ax = plt.subplots(figsize=(8, 6))
-    for label, file_path in paths.items():
-        with h5py.File(file_path, "r") as f:
-            basis_number = f["basis_number"][:]
-            errors = f["errors"][:]
-
-        for i in range(errors.shape[0]):
-            ax.plot(
-                basis_number[i],
-                errors[i],
-                label=f"{label}, n={i+1}",
-            )
-
+    (label, file_path) = list(paths.items())[0]
+    with h5py.File(file_path, "r") as f:
+        basis_number = f["basis_number"][:]
+        errors = f["errors"][:]
+        indices = np.linspace(0, len(errors[0]) - 1, 10, dtype=int)
+        indices = np.unique(np.append(indices, 10 - 1))  # guarantee last point
+        ax.plot(basis_number[0], errors[0], marker=markers[0], mfc=colors[0], color=colors[0], linestyle='-', markevery=indices)
+        ax.plot(basis_number[1], errors[1], marker=markers[1], mfc=colors[1], color=colors[1], linestyle='-', markevery=indices)
+    (label, file_path) = list(paths.items())[1]
+    with h5py.File(file_path, "r") as f:
+        basis_number = f["basis_number"][:]
+        errors = f["errors"][:]
+    ax.plot(basis_number[0], errors[0], marker=markers[0], mfc='white'   , color=colors[0], linestyle='-', markevery=indices)
+    ax.plot(basis_number[1], errors[1], marker=markers[1], mfc='white'   , color=colors[1], linestyle='-', markevery=indices)
     ax.set_xlabel("Basis size")
-    ax.set_ylabel("Relative error (mean, $L^\\infty$)")
+    ax.set_ylabel(r"L$_\infty$ error")
     ax.set_yscale("log")
-    ax.set_title("ROM Basis Test: Error Decay vs Basis Size")
+    ax.set_ylim(1e-8, 1e0)
     ax.grid(True)
-    ax.legend()
     plt.tight_layout()
     FIGS_DIR.mkdir(exist_ok=True, parents=True)
-    plt.savefig(str(FIGS_DIR / "rom_basis_test_results.pdf"), bbox_inches="tight")
+    plt.savefig(str(FIGS_DIR / "rom_basis_test_results_a.pdf"), bbox_inches="tight")
     plt.close()
 
-    paths = {
-        "ℙ¹ (Schoen IWP": ROM_DATA_DIR / "schoen_iwp_3" / "K_core" / "error_data.h5",
-        "ℙ² (Schoen IWP)": ROM_DATA_DIR / "schoen_iwp_4" / "K_core" / "error_data.h5",
-    }
 
+
+    # Subplot 2: Schoen IWP
+    paths = {"P1 (Schoen IWP)": ROM_DATA_DIR / "schoen_iwp_3" / "K_core" / "error_data.h5",
+             "P2 (Schoen IWP)": ROM_DATA_DIR / "schoen_iwp_4" / "K_core" / "error_data.h5",}
     fig, ax = plt.subplots(figsize=(8, 6))
-    for label, file_path in paths.items():
-        with h5py.File(file_path, "r") as f:
-            basis_number = f["basis_number"][:]
-            errors = f["errors"][:]
-
-        for i in range(errors.shape[0]):
-            ax.plot(
-                basis_number[i],
-                errors[i],
-                label=f"{label}, n={i+1}",
-            )
-
+    (label, file_path) = list(paths.items())[0]
+    with h5py.File(file_path, "r") as f:
+        basis_number = f["basis_number"][:]
+        errors = f["errors"][:]
+        indices = np.linspace(0, len(errors[0]) - 1, 10, dtype=int)
+        indices = np.unique(np.append(indices, 10 - 1))  # guarantee last point
+        ax.plot(basis_number[0], errors[0], marker=markers[0], mfc=colors[0], color=colors[0], linestyle='-', markevery=indices)
+        ax.plot(basis_number[1], errors[1], marker=markers[1], mfc=colors[1], color=colors[1], linestyle='-', markevery=indices)
+    (label, file_path) = list(paths.items())[1]
+    with h5py.File(file_path, "r") as f:
+        basis_number = f["basis_number"][:]
+        errors = f["errors"][:]
+    ax.plot(basis_number[0], errors[0], marker=markers[0], mfc='white'   , color=colors[0], linestyle='-', markevery=indices)
+    ax.plot(basis_number[1], errors[1], marker=markers[1], mfc='white'   , color=colors[1], linestyle='-', markevery=indices)
     ax.set_xlabel("Basis size")
-    ax.set_ylabel("Relative error (mean, $L^\\infty$)")
+    ax.set_ylabel(r"L$_\infty$ error")
     ax.set_yscale("log")
-    ax.set_title("ROM Basis Test: Error Decay vs Basis Size")
+    ax.set_ylim(1e-8, 1e0)
     ax.grid(True)
-    ax.legend()
     plt.tight_layout()
     FIGS_DIR.mkdir(exist_ok=True, parents=True)
-    plt.savefig(str(FIGS_DIR / "rom_basis_test_results_iwp.pdf"), bbox_inches="tight")
+    plt.savefig(str(FIGS_DIR / "rom_basis_test_results_b.pdf"), bbox_inches="tight")
     plt.close()
+
+    # Subplot 3: Legend
+    fig, ax = plt.subplots(figsize=(6, 1))
+    ax.plot([], [], marker=markers[0], mfc=colors[0], color=colors[0], linestyle='-',label=r"$\mathbb{P}_1 \quad n_k=1$")
+    ax.plot([], [], marker=markers[0], mfc='white',   color=colors[0], linestyle='-',label=r"$\mathbb{P}_2 \quad n_k=1$")
+    ax.plot([], [], marker=markers[1], mfc=colors[1], color=colors[1], linestyle='-',label=r"$\mathbb{P}_1 \quad n_k=2$")
+    ax.plot([], [], marker=markers[1], mfc='white',   color=colors[1], linestyle='-',label=r"$\mathbb{P}_2 \quad n_k=2$")
+    ax.axis('off')
+    legend = fig.legend(loc='center', frameon=False, ncol=4)
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "rom_basis_test_legend.pdf"), bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
+
+
+# --- Plot results from rom_basis_test_bis.py ---
+def plot_rom_basis_test_bis():
+    """
+    Plot the error decay as a function of basis size for each n in the ROM basis test
+    for both schoen_frd (subplot c) and schwarz_primitive (subplot d), reading the
+    error_data_bis.h5 files produced by rom_basis_test_bis.py.
+    """
+
+    # Subplot 3: Schoen FRD
+    paths = {"P1 (Schoen FRD)": ROM_DATA_DIR / "schoen_frd_3" / "K_core" / "error_data_bis.h5",
+             "P2 (Schoen FRD)": ROM_DATA_DIR / "schoen_frd_4" / "K_core" / "error_data_bis.h5",}
+    fig, ax = plt.subplots(figsize=(8, 6))
+    (label, file_path) = list(paths.items())[0]
+    with h5py.File(file_path, "r") as f:
+        basis_number = f["basis_number"][:]
+        errors = f["errors"][:]
+        indices = np.linspace(0, len(errors[0]) - 1, 10, dtype=int)
+        indices = np.unique(np.append(indices, 10 - 1))  # guarantee last point
+        ax.plot(basis_number[0], errors[0], marker=markers[0], mfc=colors[0], color=colors[0], linestyle='-', markevery=indices)
+        ax.plot(basis_number[1], errors[1], marker=markers[1], mfc=colors[1], color=colors[1], linestyle='-', markevery=indices)
+    (label, file_path) = list(paths.items())[1]
+    with h5py.File(file_path, "r") as f:
+        basis_number = f["basis_number"][:]
+        errors = f["errors"][:]
+    ax.plot(basis_number[0], errors[0], marker=markers[0], mfc='white'   , color=colors[0], linestyle='-', markevery=indices)
+    ax.plot(basis_number[1], errors[1], marker=markers[1], mfc='white'   , color=colors[1], linestyle='-', markevery=indices)
+    ax.set_xlabel("Basis size")
+    ax.set_ylabel(r"L$_\infty$ error")
+    ax.set_yscale("log")
+    ax.set_ylim(1e-8, 1e0)
+    ax.grid(True)
+    plt.tight_layout()
+    FIGS_DIR.mkdir(exist_ok=True, parents=True)
+    plt.savefig(str(FIGS_DIR / "rom_basis_test_results_c.pdf"), bbox_inches="tight")
+    plt.close()
+
+
+
+    # Subplot 4: Schwarz Primitive
+    paths = {"P1 (Schwarz Primitive)": ROM_DATA_DIR / "schwarz_primitive_3" / "K_core" / "error_data_bis.h5",
+             "P2 (Schwarz Primitive)": ROM_DATA_DIR / "schwarz_primitive_4" / "K_core" / "error_data_bis.h5",}
+    fig, ax = plt.subplots(figsize=(8, 6))
+    (label, file_path) = list(paths.items())[0]
+    with h5py.File(file_path, "r") as f:
+        basis_number = f["basis_number"][:]
+        errors = f["errors"][:]
+        indices = np.linspace(0, len(errors[0]) - 1, 10, dtype=int)
+        indices = np.unique(np.append(indices, 10 - 1))  # guarantee last point
+        ax.plot(basis_number[0], errors[0], marker=markers[0], mfc=colors[0], color=colors[0], linestyle='-', markevery=indices)
+        ax.plot(basis_number[1], errors[1], marker=markers[1], mfc=colors[1], color=colors[1], linestyle='-', markevery=indices)
+    (label, file_path) = list(paths.items())[1]
+    with h5py.File(file_path, "r") as f:
+        basis_number = f["basis_number"][:]
+        errors = f["errors"][:]
+    ax.plot(basis_number[0], errors[0], marker=markers[0], mfc='white'   , color=colors[0], linestyle='-', markevery=indices)
+    ax.plot(basis_number[1], errors[1], marker=markers[1], mfc='white'   , color=colors[1], linestyle='-', markevery=indices)
+    ax.set_xlabel("Basis size")
+    ax.set_ylabel(r"L$_\infty$ error")
+    ax.set_yscale("log")
+    ax.set_ylim(1e-8, 1e0)
+    ax.grid(True)
+    plt.tight_layout()
+    FIGS_DIR.mkdir(exist_ok=True, parents=True)
+    plt.savefig(str(FIGS_DIR / "rom_basis_test_results_d.pdf"), bbox_inches="tight")
+    plt.close()
+
+    # Legend (same as plot_rom_basis_test, regenerated so this function is standalone)
+    fig, ax = plt.subplots(figsize=(6, 1))
+    ax.plot([], [], marker=markers[0], mfc=colors[0], color=colors[0], linestyle='-',label=r"$\mathbb{P}_1 \quad n_k=1$")
+    ax.plot([], [], marker=markers[0], mfc='white',   color=colors[0], linestyle='-',label=r"$\mathbb{P}_2 \quad n_k=1$")
+    ax.plot([], [], marker=markers[1], mfc=colors[1], color=colors[1], linestyle='-',label=r"$\mathbb{P}_1 \quad n_k=2$")
+    ax.plot([], [], marker=markers[1], mfc='white',   color=colors[1], linestyle='-',label=r"$\mathbb{P}_2 \quad n_k=2$")
+    ax.axis('off')
+    legend = fig.legend(loc='center', frameon=False, ncol=4)
+    plt.tight_layout()
+    plt.savefig(str(FIGS_DIR / "rom_basis_test_legend.pdf"), bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
+
 
 if __name__ == "__main__":
 
     # plot_test_1()
+    # plot_test_1_bis()
     # plot_test_2()
     # plot_test_3()
     # plot_test_4()
     # plot_test_5()
     # plot_test_6()
-
     plot_rom_basis_test()
-
-
-
+    # plot_rom_basis_test_bis()

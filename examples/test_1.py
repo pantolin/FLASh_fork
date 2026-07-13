@@ -13,6 +13,7 @@ from FLASh.pde import (
     Elasticity,
     BDDC,
     PCG,
+    GAMG,
     Cholesky
 )
 
@@ -110,6 +111,7 @@ if __name__ == "__main__":
     cholesky_stats = []
     bddc_stats = []
     pcg_stats = []
+    gamg_stats = []
 
     i_max = 10
     for i in range(1, i_max):
@@ -158,18 +160,30 @@ if __name__ == "__main__":
         pcg_stats.append(solver.get_stats())
 
 
+        ### Solve basiline problem with GAMG solver (CG + algebraic multigrid) ###
+
+        solver = GAMG(geometry, elasticity_pde, communicators, opts = opts)
+        solver.setup()
+        solver.solve()
+
+        gamg_stats.append(solver.get_stats())
+
+
 
     if communicators.global_comm.Get_rank() == 0:
 
         bddc_iters = np.array([stats["iterations"][0] for stats in bddc_stats])
         pcg_iters = np.array([stats["iterations"] for stats in pcg_stats])
+        gamg_iters = np.array([stats["iterations"] for stats in gamg_stats])
 
         bddc_setup_time = np.array([stats["assemble time"] for stats in bddc_stats])
         pcg_setup_time = np.array([stats["assemble time"] for stats in pcg_stats])
+        gamg_setup_time = np.array([stats["assemble time"] for stats in gamg_stats])
         cholesky_setup_time = np.array([stats["assemble time"] for stats in cholesky_stats])
 
         bddc_solve_time = np.array([stats["solve time"] for stats in bddc_stats])
         pcg_solve_time = np.array([stats["solve time"] for stats in pcg_stats])
+        gamg_solve_time = np.array([stats["solve time"] for stats in gamg_stats])
         cholesky_solve_time = np.array([stats["solve time"] for stats in cholesky_stats])
 
         number_of_subdomains = 8 * (np.arange(1, i_max) ** 2)
@@ -183,13 +197,16 @@ if __name__ == "__main__":
 
             f.create_dataset("bddc_iters", data=bddc_iters)
             f.create_dataset("pcg_iters", data=pcg_iters)
+            f.create_dataset("gamg_iters", data=gamg_iters)
 
             f.create_dataset("bddc_setup_time", data=bddc_setup_time)
             f.create_dataset("pcg_setup_time", data=pcg_setup_time)
+            f.create_dataset("gamg_setup_time", data=gamg_setup_time)
             f.create_dataset("cholesky_setup_time", data=cholesky_setup_time)
 
             f.create_dataset("bddc_solve_time", data=bddc_solve_time)
             f.create_dataset("pcg_solve_time", data=pcg_solve_time)
+            f.create_dataset("gamg_solve_time", data=gamg_solve_time)
             f.create_dataset("cholesky_solve_time", data=cholesky_solve_time)
 
             f.create_dataset("number_of_subdomains", data=number_of_subdomains)
