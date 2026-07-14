@@ -2,6 +2,9 @@
 Evaluates the accuracy of reduced-order modeling (ROM) for a single cell using FLASh.
 Compares errors between exact and ROM-based fast assembly tensors (with and without interpolation),
 computes stiffness ROM error, and solves a simple problem to assess ROM performance.
+
+Experimental RBF-interpolator ROM variant; not referenced by the current
+paper text.
 """
 
 import numpy as np

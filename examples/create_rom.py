@@ -2,6 +2,10 @@
 Script for generating reduced-order models (ROM) and snapshots using the FLASh framework.
 Configures parameters and calls routines to build and save ROM data for various microstructures.
 Intended for offline ROM preparation and dataset creation.
+
+Supports the ROM construction described in Section 4.2 "Reduced order
+modeling" and Section 4.3 "Offline cost and speedup"; not tied to a specific
+numbered figure or table.
 """
 import numpy as np
 from pathlib import Path

@@ -1,6 +1,10 @@
 """
 Simulates a wrench to test FLASh methods on a non-spline macro geometry.
 Useful for evaluating framework flexibility with complex, real-world shapes.
+
+Reproduces the coarse wrench of Figure 20(a,b) (Section 5.2.2, "Lattice wrench").
+See wrench_refined.py for the dense wrench (Figure 20c,d) and the
+h-refinement study (Figure 21).
 """
 
 import sys
@@ -26,7 +30,7 @@ from FLASh.rom import (
     MDEIM
 )
 
-from example_5_utils import (
+from example_wrench_coarse_utils import (
     WrenchGeometry
 )
 
@@ -38,7 +42,8 @@ if __name__ == "__main__":
 
     
     ### Load ROM models ###
-    
+
+    # The schoen_iwp_3 models are trained on the threshold box [-2.5, 2.5]^4.
     epsilon_min = -2.5
     epsilon_max = 2.5
 
@@ -96,11 +101,12 @@ if __name__ == "__main__":
         geometry_opts
     )
     
+    rng = np.random.default_rng(20260213)
+
     def parameter_function(X):
         num_points = X.shape[1]
-        random_vals = 0.1 + 2.4 * np.random.rand(num_points)
-        return random_vals
-    
+        return rng.uniform(epsilon_min, epsilon_max, num_points)
+
 
     geometry.coarse_mesh.set_parameter_field_from_function(parameter_function)
 
@@ -180,7 +186,7 @@ if __name__ == "__main__":
 
     sbdmn_opts = {
         "stabilize" : True,
-        "stabilization": 1e-4,
+        "stabilization": 5e-4,
         "assemble" : True
     }
 

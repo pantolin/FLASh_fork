@@ -1,6 +1,8 @@
 """
 Assesses convergence and error for different solver approximations in FLASh.
 Designed to test the effect of algorithmic choices on solution quality.
+
+Reproduces Figure 17 (Section 5.1.3, "Efficiency of the accelerations").
 """
 
 import numpy as np
@@ -316,7 +318,7 @@ if __name__ == "__main__":
         romws_assemble_time = np.array([stats["assemble time"] for stats in romws_stats])
         romws_solve_time = np.array([stats["solve time"] for stats in romws_stats])
 
-        folder = RESULTS_DIR / "test_4"
+        folder = RESULTS_DIR / "test_acceleration_efficiency"
         folder.mkdir(parents=True, exist_ok=True)
 
         file_path = folder / "data.h5"

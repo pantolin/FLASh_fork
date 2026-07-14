@@ -91,6 +91,7 @@ class Subdomain:
         self._edge_primals = opts.get("edge_primals", True)
         self._stab = opts.get("stabilize", False)
         self._stab_val = opts.get("stabilization", 1e-3)
+        self._n_quad = opts.get("n_quad_pts", 8)
         self._approx = opts.get("approximate_geometry", False)
         self._approx_degree = opts.get("approximate_geometry_degree", 2)
         self._parametric_bc = opts.get("parametric_bc", False)
@@ -259,6 +260,22 @@ class Subdomain:
 
             x = self._map.evaluate(center[None,:])[0]
             self._edge_centers.append(x)
+
+        # Physical chord midpoints of the mapped cell corners, in the same edge
+        # ordering. Unlike the box-based centers above, these remain correct for
+        # cells whose parametric axes are rotated with respect to the physical
+        # ones, and they match the coarse-mesh edge coordinates used by the
+        # boundary-condition markers.
+        corners = self._map.evaluate(
+            np.array([[0.0, 0.0], [1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], dtype=dtype)
+        )[:, :2]
+
+        self._chord_edge_centers = [
+            0.5*(corners[0] + corners[1]),
+            0.5*(corners[0] + corners[2]),
+            0.5*(corners[1] + corners[3]),
+            0.5*(corners[2] + corners[3])
+        ]
 
         ##### This is used for other things.
 
@@ -518,10 +535,11 @@ class Subdomain:
         f = M @ b
 
         edge_dofs = self.edges_dofs
+        marker_centers = self._parametric_edge_centers if self._parametric_bc else self._chord_edge_centers
 
         for (type_, fun, marker, ind) in self._linear_pde.exterior_bc:
             if type_ == 1:
-                for dofs, center in zip(edge_dofs, self._parametric_edge_centers):
+                for dofs, center in zip(edge_dofs, marker_centers):
                     if marker(center):
 
                         b = np.zeros((n_b * 2))
@@ -568,11 +586,11 @@ class Subdomain:
                     mu = self._linear_pde.mu,
                 )
             
-        K = self._linear_pde.assemble_stiffness(unf_domain, self._basis, coeff)
+        K = self._linear_pde.assemble_stiffness(unf_domain, self._basis, coeff, n_quad_pts = self._n_quad)
 
         if stab:
 
-            K_neg = self._linear_pde.assemble_stiffness(unf_domain, self._basis, coeff, full_cell = True) - K
+            K_neg = self._linear_pde.assemble_stiffness(unf_domain, self._basis, coeff, full_cell = True, n_quad_pts = self._n_quad) - K
             K += self._stab_val * K_neg
         
         return K
@@ -593,7 +611,7 @@ class Subdomain:
 
             coeff = self._map.evaluate_jacobian_determinant
             
-        return self._linear_pde.assemble_mass(unf_domain, self._basis, coeff)
+        return self._linear_pde.assemble_mass(unf_domain, self._basis, coeff, n_quad_pts = self._n_quad)
     
     def assemble_bM(self, approx = None) -> np.ndarray:
 
@@ -611,9 +629,9 @@ class Subdomain:
 
             coeff = self._map.evaluate_arclen
 
-        bM = self._linear_pde.assemble_boundary_mass(unf_domain, self._basis, coeff)
-        
-        return bM 
+        bM = self._linear_pde.assemble_boundary_mass(unf_domain, self._basis, coeff, n_quad_pts = self._n_quad)
+
+        return bM
 
     def assemble_f(self, approx = None) -> np.ndarray:
 
@@ -631,7 +649,9 @@ class Subdomain:
 
             coeff = self._map.evaluate_jacobian_determinant
             
-        return self._linear_pde.assemble_right_hand_side(unf_domain, self._basis, coeff, self._parametric_edge_centers)
+        centers = self._parametric_edge_centers if self._parametric_bc else self._chord_edge_centers
+
+        return self._linear_pde.assemble_right_hand_side(unf_domain, self._basis, coeff, centers, n_quad_pts = self._n_quad)
 
 
 
