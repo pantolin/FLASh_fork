@@ -2,7 +2,7 @@
 
 This repository contains the code and data used for the paper:
 
-> G. Bonilla Moreno, G. Guarino, P. Antolin, "A ROM-based BDDC solver for unfitted p-FEM level-set-based lattice structures", arXiv preprint, 2026. [arXiv:2604.09113](https://arxiv.org/abs/2604.09113)
+> G. Bonilla Moreno, G. Guarino, P. Antolin, "A ROM-based BDDC solver for unfitted p-FEM level-set-based two-dimensional lattice structures", *Computer Methods in Applied Mechanics and Engineering*, 2026, article 119304. [doi:10.1016/j.cma.2026.119304](https://doi.org/10.1016/j.cma.2026.119304) (preprint: [arXiv:2604.09113](https://arxiv.org/abs/2604.09113))
 
 This code was developed by Gonzalo Bonilla Moreno during a stay at the MNS lab at EPFL (https://www.epfl.ch/labs/mns/) under the supervision of Pablo Antolin. The macro geometries for the wrench and wing examples were designed by Giuliano Guarino.
 
